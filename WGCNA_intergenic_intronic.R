@@ -19,6 +19,8 @@ dim(intergenic_intronic_transcript)
 
 
 ## Load in count table based on NumRead counts and DESeq2 normalization
+### load packages
+library(DESeq2)
 reads <- read.table('merge_expr.txt', header = T, row.names = 1)
 colnames(reads) <- paste("DCD002", c(492:511),"SQ", sep = "")
 reads <- round(reads,0) # round reads
