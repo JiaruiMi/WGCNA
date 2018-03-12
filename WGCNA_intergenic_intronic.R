@@ -359,16 +359,16 @@ head(datExpr1)[21]; head(datExpr1[22]); colnames(datExpr1)
 
 ### Use loess model to fit the curve in order to select the highly variable genes
 p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
-  geom_smooth(span = 0.2, method = 'loess') + 
-  geom_smooth(method = lm, col = 'red') + 
+  geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
+  geom_smooth(method = lm, col = 'red', na.rm = T) + 
   ylim(c(0.4,2.6)) +
-  geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
+  geom_vline(xintercept = seq(0,3,0.2), col = 'darkgreen', lty = 2) +
   theme_classic(); p
 model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0.2, method = 'loess')
 summary(model_xlog2mean_ylog2CV)
 prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
 head(prediction$fit)
-datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 0.8,1:20]; dim(datExpr0)
+datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 2.5,1:20]; dim(datExpr0)
 
 
 
@@ -426,7 +426,7 @@ text(sft$fitIndices[,1], sft$fitIndices[,5],labels = powers, cex = cex1, col = '
 ## Choose the softPower
 softPower <- sft$powerEstimate
 softPower
-Adjacency <- adjacency(t(datExpr0), power = 7)
+Adjacency <- adjacency(t(datExpr0), power = softPower)
 ## Turn adjacency matrix into Topological matrix, this step takes some time ##
 TOM <- TOMsimilarity(Adjacency)  
 dissTOM <- 1-TOM
@@ -435,7 +435,7 @@ geneTree <- hclust(as.dist(dissTOM), method = 'average')   # This step takes som
 par(mfrow = c(1,1))
 plot(geneTree, xlab = '', sub = '', main = 'Gene clustering on TOM-based dissimilarity', labels = F, hang = 0.04)
 # We like large modules, so we set the minimum module size relatively high
-minModuleSize <- 50
+minModuleSize <- 8
 # set cutHeight, otherwise the function will set a cutHeight automatically
 # The next step may take some time
 dynamicMods <- cutreeDynamic(dendro = geneTree, distM = dissTOM, deepSplit = 2, pamRespectsDendro = F, minClusterSize = minModuleSize)
@@ -500,13 +500,13 @@ labeledHeatmap(Matrix = moduleTraitCor,
 
 
 ##################### Visualizing the gene network #######################
-nSelect <- 400
+nSelect <- 153
 set.seed(10)
 select <- sample(nGene, size = nSelect)
 selectTOM <- dissTOM[select, select]
 selectTree <- hclust(as.dist(selectTOM), method = 'average')
 selectColors <- moduleColors[select]
-plotDiss <- selectTOM^7
+plotDiss <- selectTOM^8
 diag(plotDiss) <- NA
 TOMplot(plotDiss, selectTree, selectColors, main = 'Network heatmap plot, select genes')
 
