@@ -1,6 +1,6 @@
 ################### Set working directory ###################
 setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
-dir()
+## dir()
 
 
 ##################### Read in data (counts table and SampleGroup) ########################
@@ -15,7 +15,6 @@ colnames(transcripts) <- paste("DCD002", c(492:511),"SQ", sep = "")
 transcripts <- round(transcripts,0) # round reads
 intergenic_intronic_transcript <- transcripts[row.names(transcripts) %in% intergenic_intronic,]
 dim(intergenic_intronic_transcript)
-
 
 
 ## Load in count table based on NumRead counts and DESeq2 normalization
@@ -354,19 +353,22 @@ if (!gsg$allOK)
 n <- nrow(datExpr0); n
 datExpr0[n+1,] <- apply(datExpr0[c(1:n),],2, function(x){log2(mean(x)+1)}); dim(datExpr0)
 datExpr0[n+2,] <- apply(datExpr0[c(1:n),], 2, function(x){log2(sd(x)/mean(x)+1)}) ; dim(datExpr0)# 使用变异系数（coefficient of variance, CV)较正表达量高低对变异度的影响
-datExpr1 <- as.data.frame(t(datExpr0)); names(datExpr1)[21] <- 'log2_mean';names(datExpr1)[22] <- 'log2_CV'; names(datExpr1)
+datExpr1 <- as.data.frame(t(datExpr0))
+names(datExpr1)[21] <- 'log2_mean';names(datExpr1)[22] <- 'log2_CV'; names(datExpr1)
 head(datExpr1)[21]; head(datExpr1[22]); colnames(datExpr1)
 
 ### Use loess model to fit the curve in order to select the highly variable genes
 p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
   geom_smooth(span = 0.2, method = 'loess') + 
   geom_smooth(method = lm, col = 'red') + 
-  ylim(c(0.4,2.6)); p
+  ylim(c(0.4,2.6)) +
+  geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
+  theme_classic(); p
 model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0.2, method = 'loess')
 summary(model_xlog2mean_ylog2CV)
 prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
 head(prediction$fit)
-datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit,1:20]; dim(datExpr0)
+datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 0.8,1:20]; dim(datExpr0)
 
 
 
@@ -379,10 +381,9 @@ summary(as.vector(as.matrix(datExpr0)[22,]))
 hist(as.vector(as.matrix(datExpr0)[22,]), breaks = 1000, main = "Histogram of CV (coefficient of Varince)")
 datExpr0 <- datExpr0[1:n, datExpr0[n+2,]>1.5 & datExpr0[n+1,] >= 1 ] # 增加对表达量的限定，以减少噪音
 dim(datExpr0)
-filtered_normalized_counts <- t(datExpr0)
+filtered_normalized_counts <- datExpr0
 head(filtered_normalized_counts)
 dim(filtered_normalized_counts)
-
 
 ###### Sample Cluster (样本聚类) ######
 ## For sample clustering, we should used transformed count matrix. 
@@ -434,7 +435,7 @@ geneTree <- hclust(as.dist(dissTOM), method = 'average')   # This step takes som
 par(mfrow = c(1,1))
 plot(geneTree, xlab = '', sub = '', main = 'Gene clustering on TOM-based dissimilarity', labels = F, hang = 0.04)
 # We like large modules, so we set the minimum module size relatively high
-minModuleSize <- 80
+minModuleSize <- 50
 # set cutHeight, otherwise the function will set a cutHeight automatically
 # The next step may take some time
 dynamicMods <- cutreeDynamic(dendro = geneTree, distM = dissTOM, deepSplit = 2, pamRespectsDendro = F, minClusterSize = minModuleSize)
@@ -451,7 +452,7 @@ MEDiss <- 1-cor(MEs)
 METree <- hclust(as.dist(MEDiss), method = 'average')
 par(mfrow = c(1,1))
 plot(METree, main = 'Clustering of module eigengene', xlab = '', sub = '')
-MEDissThres = 0.2 # set the threshold to make some branches together
+MEDissThres = 0.25 # set the threshold to make some branches together
 abline(h = MEDissThres, col = 'red')
 Merge <- mergeCloseModules(t(datExpr0), dynamicColors, cutHeight = MEDissThres, verbose = 3)
 mergedColors <- Merge$colors
@@ -520,13 +521,13 @@ modNames <- substring(names(MEs),3)
 modNames
 # 首先计算模块与基因的相关性矩阵
 # MEs表示每个模块在样本里的值
-geneModuleMembership <- as.data.frame(cor(datExpr0, MEs, use = 'p'))
+geneModuleMembership <- as.data.frame(cor(t(datExpr0), MEs, use = 'p'))
 MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership),nSample))
 head(MMPvalue)
 names(MMPvalue) <- paste("p.MM", modNames, sep = "")
 # names of those traits
 traitNames <- names(traitData)
-geneTraitSignificance <- as.data.frame(cor(datExpr0, traitData, use = 'p'))
+geneTraitSignificance <- as.data.frame(cor(t(datExpr0), traitData, use = 'p'))
 head(geneTraitSignificance)
 GSPvalue <- as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance), nSample))
 head(GSPvalue)
@@ -571,18 +572,18 @@ modProbes_black
 # 也可以指定感兴趣的模块进行分析，每一个module都分配了一个color
 # 比如对module = ‘black’ 的模块进行分析
 # 'black' module gene
-module <- 'pink'
+module <- 'black'
 column <- match(module, modNames)
 moduleGenes <- moduleColors == module
 head(moduleGenes)
 head(moduleColors)
-pink_module_index <- which(moduleColors == 'pink') # the index of genes which belong to 'brown' module
-length(colnames(datExpr0)[pink_module_index])
-length(rownames(filtered_normalized_counts)[pink_module_index])
+black_module_index <- which(moduleColors == 'black') # the index of genes which belong to 'brown' module
+length(colnames(datExpr0)[black_module_index])
+length(rownames(filtered_normalized_counts)[black_module_index])
 # 注意datExpr0和filtered_normalized_counts是转置的关系，所以datExpr0的colnames和filtered_normalized_counts的rownames是一致的
 # 都是基因名，相当于后面的probes
-pink_module_transcriptName <- rownames(filtered_normalized_counts)[pink_module_index]
-pink_module_transcriptName
+black_module_transcriptName <- rownames(filtered_normalized_counts)[black_module_index]
+black_module_transcriptName
 # 'brown' module 有1095个基因
 
 
