@@ -668,21 +668,21 @@ modProbes_pink <- probes[inModule]; length(modProbes_pink)
 modProbes_black
 
 # 也可以指定感兴趣的模块进行分析，每一个module都分配了一个color
-# 比如对module = ‘black’ 的模块进行分析
-# 'black' module gene
-module <- 'black'
+# 比如对module = ‘yellow’ 的模块进行分析
+# 'yellow' module gene
+module <- 'yellow'
 column <- match(module, modNames)
 moduleGenes <- moduleColors == module
 head(moduleGenes)
 head(moduleColors)
-black_module_index <- which(moduleColors == 'black') # the index of genes which belong to 'brown' module
-length(colnames(datExpr0)[black_module_index])
-length(rownames(filtered_normalized_counts)[black_module_index])
+yellow_module_index <- which(moduleColors == 'yellow') # the index of genes which belong to 'brown' module
+length(colnames(datExpr0)[yellow_module_index])
+length(rownames(filtered_normalized_counts)[yellow_module_index])
 # 注意datExpr0和filtered_normalized_counts是转置的关系，所以datExpr0的colnames和filtered_normalized_counts的rownames是一致的
 # 都是基因名，相当于后面的probes
-black_module_transcriptName <- rownames(filtered_normalized_counts)[black_module_index]
-black_module_transcriptName
-# 'brown' module 有1095个基因
+yellow_module_transcriptName <- rownames(filtered_normalized_counts)[yellow_module_index]
+length(yellow_module_transcriptName); yellow_module_transcriptName
+# 'yellow' module 有1095个基因
 
 
 # 'cyan' module gene
