@@ -483,19 +483,6 @@ hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
 heatmap.2(pearson_cor, Rowv = as.dendrogram(hc), trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
 pheatmap(pearson_cor)
 
-
-
-
-summary(as.vector(as.matrix(datExpr0[21,])))
-hist(as.vector(as.matrix(datExpr0[21,],breaks = 1000)))
-summary(as.vector(as.matrix(datExpr0)[22,]))
-hist(as.vector(as.matrix(datExpr0)[22,]), breaks = 1000, main = "Histogram of CV (coefficient of Varince)")
-datExpr0 <- datExpr0[1:n, datExpr0[n+2,]>1.5 & datExpr0[n+1,] >= 1 ] # 增加对表达量的限定，以减少噪音
-dim(datExpr0)
-filtered_normalized_counts <- datExpr0
-head(filtered_normalized_counts)
-dim(filtered_normalized_counts)
-
 ###### Sample Cluster (样本聚类) ######
 ## For sample clustering, we should used transformed count matrix. 
 ## datExpr0 has been transposed in the steps before, therefore rows are samples, columns are genes
