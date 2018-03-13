@@ -2,7 +2,6 @@
 setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
 ## dir()
 
-
 ##################### Read in data (counts table and SampleGroup) ########################
 ## Load in sample data
 sample <- read.csv('SampleGroup.csv', header = T, row.names = 1, colClasses = 'factor')
@@ -13,6 +12,37 @@ intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt')
 intergenic_intronic <- as.vector(as.matrix(intergenic_intronic))
 colnames(transcripts) <- paste("DCD002", c(492:511),"SQ", sep = "")
 transcripts <- round(transcripts,0) # round reads
+### Have a look at the transcripts distribution after TPM normalization
+group_List <- sample$celltype
+exprSet_L <- row.names(transcripts)    
+exprSet_L <- cbind(exprSet_L, as.data.frame(transcripts)) # Must convert normalized_count into data.frame before cbind
+exprSet_L <- melt(data = exprSet_L, id.vars = 'exprSet_L')
+exprSet_L$group <- rep(group_List, each = nrow(transcripts))
+#### boxplot
+p <- ggplot(data = exprSet_L, aes(x = variable, y = value, fill = group))+ geom_boxplot()
+p
+p <- p +stat_summary(fun.y="mean",geom="point",shape=23,size=3,fill="red")
+p
+p <- p + theme_set(theme_set(theme_bw(base_size=20)))
+p
+p <- p + theme(text=element_text(face='bold'),axis.text.x=element_text(angle=90,hjust=1),axis.title=element_blank())
+p
+#### violinplot
+p <- ggplot(data = exprSet_L,aes(x = variable, y = value, fill = group))+geom_violin()+
+  stat_summary(fun.y="mean",geom="point",shape=23,size=3,fill="red")+
+  theme_set(theme_set(theme_bw(base_size=20)))+
+  theme(text=element_text(face='bold'),axis.text.x=element_text(angle=90,hjust=1),axis.title=element_blank())
+p
+#### histogram (Here we can see the negative binomial distribution of read counts of all genes)
+p <- ggplot(exprSet_L, aes(value, fill = group))+geom_histogram(bins = 200)+facet_wrap(~variable, nrow = 4)
+p
+#### density plot
+p <- ggplot(exprSet_L, aes(value, fill = group, col = group))+geom_density()+facet_wrap(~variable, nrow = 4)
+p
+p <- ggplot(exprSet_L, aes(value, col = group))+geom_density()
+p
+### Make 'intergenic_intronic_transcript' object with transcripts only in 
+### intergenic and intronic regions
 intergenic_intronic_transcript <- transcripts[row.names(transcripts) %in% intergenic_intronic,]
 dim(intergenic_intronic_transcript)
 
