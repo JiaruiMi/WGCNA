@@ -10,10 +10,13 @@ setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_dat
 library(reshape2)
 library(ggplot2)
 
-##################### Read in data (counts table and SampleGroup) ########################
+##################### Read in data (SampleGroup) ########################
 ## Load in sample data
 sample <- read.csv('SampleGroup.csv', header = T, row.names = 1, colClasses = 'factor')
 
+
+
+##################### Read in data (TPM) and data visualization ########################
 ## Load in count table based on TPM normalization
 transcripts <- read.table('merge_tpm.txt', header = T, row.names = 1)
 intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt')
@@ -55,7 +58,7 @@ p
 intergenic_intronic_transcript <- transcripts[row.names(transcripts) %in% intergenic_intronic,]
 dim(intergenic_intronic_transcript)
 
-
+##################### Read in data (NumReads) and data visualization ########################
 ## Load in count table based on NumRead counts and DESeq2 normalization
 ### load packages
 library(DESeq2)
