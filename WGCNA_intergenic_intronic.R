@@ -108,6 +108,14 @@ p <- ggplot(exprSet_L, aes(value, col = group))+geom_density()
 p
 
 
+
+#==============================================================================================
+#
+#     Scater object creation, Gene filtering and Exploratory data analysis (SC3, M3Drop)
+#                     Get the genelist of highly variable genes
+#
+#==============================================================================================
+
 ##################### Using scater for object creation and normalization #################
 # Load packages
 library('SingleCellExperiment')
@@ -127,6 +135,28 @@ plot(rowMeans(counts(data)), rowVars(counts(data)), xlab = 'Mean Expression', yl
 plot(rowMeans(counts(data)), rowVars(counts(data)), log = 'xy', xlab = 'Mean Expression', ylab = 'Variance')
 Brennecke_HVG <- BrenneckeGetVariableGenes(logcounts(data), fdr = 0.01, minBiolDisp = 0.5)
 length(Brennecke_HVG)
+
+#### Using Scater Highly Variable Genes, we can do clustering and PCA plot
+##### Clustering with normalized_counts derived from DESeq2
+library('gplots')
+library('pheatmap')
+library('amap')
+library('RColorBrewer')
+normalized_counts_HVG <- normalized_counts[rownames(normalized_counts) %in% Brennecke_HVG,]
+pearson_cor <- as.matrix(cor(normalized_counts_HVG, method = 'pearson'))
+head(pearson_cor)
+hc <- hcluster(t(normalized_counts_HVG), method="pearson")
+hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+heatmap.2(pearson_cor, Rowv = as.dendrogram(hc), trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
+pheatmap(pearson_cor)
+
+##### Clusterig with Log-transformed normalized counts derived from DESeq2
+rlogMat_HVG <- rlogMat[rownames(rlogMat) %in% Brennecke_HVG,]
+pearson_cor <- as.matrix(cor(rlogMat_HVG, method = 'pearson'))
+hc <- hcluster(t(rlogMat_HVG), method="pearson")
+hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+heatmap.2(pearson_cor, Rowv = as.dendrogram(hc), trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
+pheatmap(pearson_cor)
 
 
 
@@ -374,11 +404,11 @@ pv.out <- pathview(gene.data = geneList_foldchange_beta_with_acinal_2,pathway.id
 
 
 
-#======================================================================
+#======================================================================================
 #
-#                                  WGCNA 
+#                                          WGCNA 
 #
-#======================================================================
+#======================================================================================
 
 ############# STEP 1: Expression data and Phenotype data Preparation ##############
 ## Load package and basic setting
