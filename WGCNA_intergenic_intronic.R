@@ -6,6 +6,9 @@
 ################### Set working directory ###################
 setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
 ## dir()
+## Load packages
+library(reshape2)
+library(ggplot2)
 
 ##################### Read in data (counts table and SampleGroup) ########################
 ## Load in sample data
@@ -17,6 +20,7 @@ intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt')
 intergenic_intronic <- as.vector(as.matrix(intergenic_intronic))
 colnames(transcripts) <- paste("DCD002", c(492:511),"SQ", sep = "")
 transcripts <- round(transcripts,0) # round reads
+summary(transcripts);dim(transcripts)
 ### Have a look at the transcripts distribution after TPM normalization
 group_List <- sample$celltype
 exprSet_L <- row.names(transcripts)    
@@ -59,13 +63,46 @@ reads <- read.table('merge_expr.txt', header = T, row.names = 1)
 colnames(reads) <- paste("DCD002", c(492:511),"SQ", sep = "")
 reads <- round(reads,0) # round reads
 ### DESeq2 package and perform normalization
-library(DESeq2)
 ddsFullCountTable <- DESeqDataSetFromMatrix(countData = reads, colData = sample, design  = ~ celltype)
 #### Calculation and Normalization: get normalized_counts
 dds <- DESeq(ddsFullCountTable)
 normalized_counts <- counts(dds, normalized= T)
-normalized_counts <- normalized_counts[row.names(normalized_counts) %in% intergenic_intronic,]
-
+normalized_counts_mad <- apply(normalized_counts, 1, mad)
+normalized_counts < normalized_counts[order(normalized_counts_mad, decreasing = T),]
+#### Log transformation
+rld <- rlog(dds, blind = F) # This step takes some time
+rlogMat <- assay(rld)
+rlogMat <- rlogMat[order(normalized_counts_mad, decreasing = T),]
+### After Size factor normalization and log transformation, we can check the expression matrix again and compare the 
+### sequencing depth among different samples
+exprSet_L <- row.names(rlogMat)    
+exprSet_L <- cbind(exprSet_L, as.data.frame(rlogMat)) # Must convert normalized_count into data.frame before cbind
+exprSet_L <- melt(data = exprSet_L, id.vars = 'exprSet_L')
+exprSet_L$group <- rep(group_List, each = nrow(rlogMat))
+summary(rlogMat); dim(rlogMat)
+#### boxplot
+p <- ggplot(data = exprSet_L, aes(x = variable, y = value, fill = group))+ geom_boxplot()
+print(p)
+p <- p +stat_summary(fun.y="mean",geom="point",shape=23,size=3,fill="red")
+p
+p <- p + theme_set(theme_set(theme_bw(base_size=20)))
+p
+p <- p + theme(text=element_text(face='bold'),axis.text.x=element_text(angle=90,hjust=1),axis.title=element_blank())
+p
+#### violinplot
+p <- ggplot(data = exprSet_L,aes(x = variable, y = value, fill = group))+geom_violin()+
+  stat_summary(fun.y="mean",geom="point",shape=23,size=3,fill="red")+
+  theme_set(theme_set(theme_bw(base_size=20)))+
+  theme(text=element_text(face='bold'),axis.text.x=element_text(angle=90,hjust=1),axis.title=element_blank())
+p
+#### histogram (Here we can see the negative binomial distribution of read counts of all genes)
+p <- ggplot(exprSet_L, aes(value, fill = group))+geom_histogram(bins = 200)+facet_wrap(~variable, nrow = 4)
+p
+#### density plot
+p <- ggplot(exprSet_L, aes(value, fill = group, col = group))+geom_density()+facet_wrap(~variable, nrow = 4)
+p
+p <- ggplot(exprSet_L, aes(value, col = group))+geom_density()
+p
 
 
 ##################### Using scater for object creation and normalization #################
