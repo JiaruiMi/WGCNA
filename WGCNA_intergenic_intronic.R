@@ -475,7 +475,13 @@ prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2
 head(prediction$fit)
 datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 2.5,1:20]; dim(datExpr0)
 
-
+### After selection of HVG using loess, let's have a look at the clustering
+pearson_cor <- as.matrix(cor(datExpr0, method = 'pearson'))
+head(pearson_cor)
+hc <- hcluster(t(datExpr0), method="pearson")
+hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+heatmap.2(pearson_cor, Rowv = as.dendrogram(hc), trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
+pheatmap(pearson_cor)
 
 
 
