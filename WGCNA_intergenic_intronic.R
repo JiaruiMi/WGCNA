@@ -1,3 +1,8 @@
+#==========================================================================================
+#
+#    Count table preparation with only transcriptsin intergenic and intronic regions 
+#
+#==========================================================================================
 ################### Set working directory ###################
 setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
 ## dir()
