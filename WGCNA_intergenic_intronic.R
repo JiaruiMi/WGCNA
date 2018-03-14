@@ -579,7 +579,8 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
   theme_classic() +
   geom_label(data=subset(datExpr1, datExpr1$log2_mean > 4 & datExpr1$log2_CV> 1.25), 
                   aes(label=row.names(datExpr1[datExpr1$log2_mean > 4 & datExpr1$log2_CV> 1.25,])), 
-                  col= 'black', nudge_x = 0.3,nudge_y = 0.05, fill = 'green'); p
+                  col= 'black', 
+                  nudge_x = 0.3,nudge_y = 0.05, fill = 'green'); p
 
 model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0.2, method = 'loess')
 summary(model_xlog2mean_ylog2CV)
