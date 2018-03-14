@@ -9,6 +9,7 @@ setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_dat
 ## Load packages
 library(reshape2)
 library(ggplot2)
+library(ggrepel)
 
 ##################### Read in data (SampleGroup) ########################
 ## Load in sample data
@@ -565,7 +566,21 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
   geom_smooth(method = lm, col = 'red', na.rm = T) + 
   ylim(c(0.4,2.6)) +
   geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
-  theme_classic() ; p
+  theme_classic() +
+  geom_text_repel(data=subset(datExpr1, datExpr1$log2_mean > 2 & datExpr1$log2_CV> 1.25), 
+                  aes(label=row.names(datExpr1[datExpr1$log2_mean > 2 & datExpr1$log2_CV> 1.25,])), 
+                  col= 'black', nudge_x = 0.5); p
+
+p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
+  geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
+  geom_smooth(method = lm, col = 'red', na.rm = T) + 
+  ylim(c(0.4,2.6)) +
+  geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
+  theme_classic() +
+  geom_label(data=subset(datExpr1, datExpr1$log2_mean > 4 & datExpr1$log2_CV> 1.25), 
+                  aes(label=row.names(datExpr1[datExpr1$log2_mean > 4 & datExpr1$log2_CV> 1.25,])), 
+                  col= 'black', nudge_x = 0.3,nudge_y = 0.05, fill = 'green'); p
+
 model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0.2, method = 'loess')
 summary(model_xlog2mean_ylog2CV)
 prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
