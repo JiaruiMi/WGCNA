@@ -408,6 +408,13 @@ pv.out <- pathview(gene.data = geneList_foldchange_beta_with_acinal_2,pathway.id
 #                                          WGCNA 
 #
 #======================================================================================
+## So, for the WGCNA, we need to first select proper transcripts for downstream analysis. For, we need to
+## choose the transcripts that are mapping to the non-exonic regions (intergenic and intronic regions); 
+## Second, we need to filter the transcripts with less than 2 exons and less than 200 nt; Actually, you have
+## to prepare your data according to the bed file and select the gene list in adcance. Then you prepare the
+## count table with the qualified transcripts listed and do the down stream analysis.
+
+
 
 ############# STEP 1: Expression data and Phenotype data Preparation ##############
 ## Load package and basic setting
