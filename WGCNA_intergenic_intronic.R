@@ -22,7 +22,6 @@ transcripts <- read.table('merge_tpm.txt', header = T, row.names = 1)
 intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt')
 intergenic_intronic <- as.vector(as.matrix(intergenic_intronic))
 colnames(transcripts) <- paste("DCD002", c(492:511),"SQ", sep = "")
-transcripts <- round(transcripts,0) # round reads
 summary(transcripts);dim(transcripts)
 ### Have a look at the transcripts distribution after TPM normalization
 group_List <- sample$celltype
