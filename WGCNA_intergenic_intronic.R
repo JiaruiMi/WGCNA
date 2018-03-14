@@ -415,6 +415,97 @@ pv.out <- pathview(gene.data = geneList_foldchange_beta_with_acinal_2,pathway.id
 ## count table with the qualified transcripts listed and do the down stream analysis.
 
 
+############# STEP 0: Prepare your count table (TPM) for downstream analysis ##############
+## set working directory
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lincRNA')
+## load packages for data visulizations
+library(ggplot2)
+
+
+### Summaries
+#### The number of transcripts in intergenic and intronic regions is 16176
+#### The number of transcripts in intergenic and intronic regions with exons >= 2 is 5600
+
+#==============================================================================
+#    Novel transcripts with >=2 exons in intergenic and intronic regions
+#==============================================================================
+## reads.csv detects the number of columns according to the first five rows.
+## To prepare for the dataframe, first you need to know the max number of exons for the transcripts
+num_exons_2plus <- read.csv('number_exons_2plus.csv', header = F)
+max(num_exons_2plus) # the maximum number of exons is 35
+ggplot(data = num_exons_2plus, aes(x = V1)) + geom_histogram(bins = 35)
+summary(num_exons_2plus) 
+### the mean exon numbers for new intergenic/intronic transcripts with >= 2 exons is 3.337, the median is 2
+
+
+### Filter out those with transcript length < 200
+length_exons_2plus <- read.table('exon_2plus.csv', header = FALSE, sep = ",", 
+                                 col.names = paste0("V",seq_len(35)), fill = TRUE)
+head(length_exons_2plus)
+table(rowSums(length_exons_2plus, na.rm = T) < 200)
+which(rowSums(length_exons_2plus, na.rm = T) < 200)
+#### In transcripts with exons >= 2 (5600), transcripts with length < 200 = 7, >= 200 is 5593
+
+### Check the length (mean, median, min and max) of the transcripts with exon >=2 and length >200nt
+summary(rowSums(length_exons_2plus[rowSums(length_exons_2plus, na.rm = T) >= 200,], na.rm = T)) # length summary
+summary(num_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]) # exon number summary
+
+
+#==============================================================================
+#    Novel transcripts with in intergenic and intronic regions (exon = 1 or >= 2)
+#==============================================================================
+
+num_exons_inter_intro <- read.csv('number_exons_assembly_intergenic_intronic.csv', header = F)
+ggplot(data = num_exons_inter_intro, aes(x = V1)) + geom_histogram(bins = 35)
+summary(num_exons_inter_intro)
+### the mean exon numbers for intergenic/intronic transcripts is 1.809, the median is 1
+
+
+### Filter out those with transcripts length < 200
+length_exons_assembly_intergenic_intronic <- read.table('exon_assembly_intergenic_intronic.csv', header = FALSE, sep = ",", 
+                                                        col.names = paste0("V",seq_len(35)), fill = TRUE)
+table(rowSums(length_exons_assembly_intergenic_intronic, na.rm = T) < 200)
+index_length_lessThan_200 <- which(rowSums(length_exons_assembly_intergenic_intronic, na.rm = T) < 200)
+index_length_lessThan_200
+### Check the length (mean, median, min and max) of the transcripts length >200nt
+summary(rowSums(length_exons_assembly_intergenic_intronic[rowSums(length_exons_assembly_intergenic_intronic, na.rm = T) >= 200,], na.rm = T)) # length summary
+summary(num_exons_inter_intro [which(rowSums(length_exons_assembly_intergenic_intronic, na.rm = T) >= 200),]) # exon number summary
+
+
+
+#=====================================================================================
+#    Clean your expression matrix with transcripts with exon >= 2 and length > 200nt
+#=====================================================================================
+## set working directory
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
+
+
+##################### Read in data (SampleGroup) ########################
+## Load in sample data
+sample <- read.csv('SampleGroup.csv', header = T, row.names = 1, colClasses = 'factor')
+
+##################### Read in data (TPM) and data visualization ########################
+## Load in count table based on TPM normalization (of all the 98528 transcripts)
+transcripts <- read.table('merge_tpm.txt', header = T, row.names = 1)
+intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt')
+intergenic_intronic <- as.vector(as.matrix(intergenic_intronic))
+colnames(transcripts) <- paste("DCD002", c(492:511),"SQ", sep = "")
+head(transcripts); dim(transcripts)
+
+## Choose the one in the intergenic and intronic regions
+intergenic_intronic_transcript <- transcripts[row.names(transcripts) %in% intergenic_intronic,]
+dim(intergenic_intronic_transcript)
+
+## Get rid of those with length less than 200
+intergenic_intronic_transcript_moreThan_200 <- intergenic_intronic_transcript[-index_length_lessThan_200,]
+head(intergenic_intronic_transcript_moreThan_200)
+
+## Get rid of those with exons less than 2
+exon_1 <- read.csv('exon_1_intergenic_intronic.csv', header = F)
+intergenic_intronic_exon_highThan1_length_highThan_200 <- intergenic_intronic_transcript_moreThan_200[!row.names(intergenic_intronic_transcript_moreThan_200)  
+                                                                                                      %in% exon_1$V1,]
+dim(intergenic_intronic_exon_highThan1_length_highThan_200)
+
 
 ############# STEP 1: Expression data and Phenotype data Preparation ##############
 ## Load package and basic setting
