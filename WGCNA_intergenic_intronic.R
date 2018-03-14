@@ -564,8 +564,8 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
   geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
   geom_smooth(method = lm, col = 'red', na.rm = T) + 
   ylim(c(0.4,2.6)) +
-  geom_vline(xintercept = seq(0,3,0.2), col = 'darkgreen', lty = 2) +
-  theme_classic(); p
+  geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
+  theme_classic() ; p
 model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0.2, method = 'loess')
 summary(model_xlog2mean_ylog2CV)
 prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
