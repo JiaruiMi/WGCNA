@@ -891,112 +891,31 @@ for (mod in 1:nrow(table(moduleColors)))
 
 
 
-################# Select MEcyan and MEbrown modules for network analysis #############
-############# check brown module #################
-## load edges file 
-beta_brown_module <- beta_brown_module[order(beta_brown_module$weight,decreasing = T),]
-head(beta_brown_module)
-summary(beta_brown_module)
-## sort edges and identify which genes/transcripts have the highest number of edges
-sort(table(beta_brown_module$fromNode), decreasing = T)
-## select edges based on weight
-beta_brown_module <- beta_brown_module[beta_brown_module$weight>0.1,]
-dim(beta_brown_module)
-## write tables with edges weight higher than 0.1 and usd this file as input of cytoscape for cytoHubba analysis
-write.table(x = beta_brown_module,file = 'beta_brown_module.txt',row.names = T, sep = '\t')
-## load csv file after cytoHubba analysis
-cytoHubba <- read.csv('CytoHubba-brown-module-30genes-summary.csv', header = T, row.names = NULL)
-head(cytoHubba)
-cytoHubba <- cytoHubba[,-1]
-cytoHubba_vector <- c(cytoHubba$MCC,cytoHubba$DNMC, cytoHubba$MNC, cytoHubba$Degree, cytoHubba$EPC, cytoHubba$BottleNeck, cytoHubba$EcCentricity, cytoHubba$Closeness, cytoHubba$Radiality, cytoHubba$Betweenness, cytoHubba$Stress, cytoHubba$ClusteringCoefficient)
-## check which transcripts have the higher rate of hub genes predicted by 12 algorithms from cytoHubba
-sort(table(cytoHubba_vector), decreasing = T)
-## exist in >= 8 algorithms and check their coding potential according to CPAT and PLEK
-## CPAT: TU92920, TU40817, TU45134, TU54701, TU18235, TU3649, TU40817, TU4167, TU48082, TU52640, 
-##       TU70082, TU80891, TU81363, TU86851, TU88207, TU90967
-## PLEK: TU92920, TU79222, TU45134, TU54701, TU7033, TU76925, TU11175, TU17541, TU18235, 
-##       TU23207, TU25639, TU32167, TU3649, TU40511, TU43386, TU43858, TU45801, TU47952, 
-##       TU48082, TU48752, TU49427, TU52640, TU54874, TU54799, TU64562, TU65179, TU66710, 
-##       TU67121, TU68936, TU7033, TU76156, TU76925, TU77612, TU79222, TU80891, TU82490,
-##       TU86851, TU88207, TU90967, TU91260, TU91902, TU91903, TU92981, TU93649, TU93920,
-##       TU96550, TU96700
-## Overlap: TU92920(10,kalrn, RhoGEF Kinase, Human & Mouse; full length sequence in zebrafish, kalrn; cytoplasm, nucleus; high expression in beta-cell; Sandberg low expression of kalrn; high peaks in ATAC/DNase-seq), 
-##          TU45134(8,uncharacterized LOC, SNTG1, UGT8,Taf1, Human 2| Mouse 1; Full length DNA in zebrafish; cytoplasm, nucleus; high expression in beta-cell), 
-##          TU54701(8,ELOVL4, JUN, uncharacterized LOC, GLS, ZNF621, HTN3, Csrp3, Cntn4, Serp2, Msantd3, Human | Mouse; ppdpfb in zebrafish; cytoplasm, nucleus; high expression in beta-cell)
-##          TU80891(4, FAM, uncharacterized LOC, ALS2CR11, Zcchc4, Zfp704, uncharacterized LOC, Human | Mouse; zebrafish full length DNA, ptprnb transcript; cytoplasm, nucleus; high expression in beta-cell),
-##          TU52640(3,GNA11, uncharacterized LOC, ZMYND8, Maml3, Mylk, Human | Mouse; zebrafish full length, gna11a; cytoplasm, nucleus; high expression in beta-cell), 
-##          TU88207(2,---; cytoplasm, nucleus),
-##          TU3649(1,---), TU48082(1, GABRB3, LITAF, Zdbf2, GM31214, Human | Mouse; cytoplasm, nucleus), 
-##          TU90967(1, C9orf3, LOC; cytoplasm, nucleus),TU86851(1,ltgb6); cytoplasm, nucleus,  TU18235(1,ATOX1, MSI2, ACBD5, PHF14, HOOK3, Human & Mouse ATOX1, Human | Mouse; cytoplasm, nucleus),
-cytoHubba_vector_brown_unique <- names(table(cytoHubba_vector))
-write.table(x = cytoHubba_vector_unique, file = '/Users/mijiarui/RNA-seq/lncRNA_prediction/PLEK_prediction/cytoHubba_cyan_module_geneName.txt', row.names = F)
-
-
-############ check cyan module ##############
-beta_cyan_module <- read.table('CytoscapeInput-edges-cyan.txt', header = T, stringsAsFactors = F)
-head(beta_cyan_module)
-beta_cyan_module_attribute <- read.table('CytoscapeInput-nodes-cyan.txt', header = T, stringsAsFactors = F)
-head(beta_cyan_module_attribute)
-beta_cyan_module <- beta_cyan_module[order(beta_cyan_module$weight, decreasing = T),]
-summary(beta_cyan_module)
-beta_cyan_module <- beta_cyan_module[beta_cyan_module$weight>0.1,]
-write.table(x = beta_cyan_module, file = "beta_cyan_module.txt", row.names = T, sep = '\t')
-dim(beta_cyan_module)
-cytoHubba <- read.csv('CytoHubba-cyan-module-30genes-summary.csv', header = T, row.names = NULL)
-head(cytoHubba)
-cytoHubba <- cytoHubba[,-1]
-cytoHubba_vector <- c(cytoHubba$MCC,cytoHubba$DNMC, cytoHubba$MNC, cytoHubba$Degree, cytoHubba$EPC, cytoHubba$BottleNeck, cytoHubba$EcCentricity, cytoHubba$Closeness, cytoHubba$Radiality, cytoHubba$Betweenness, cytoHubba$Stress, cytoHubba$ClusteringCoefficient)
-## check which transcripts have the higher rate of hub genes predicted by 12 algorithms from cytoHubba
-sort(table(cytoHubba_vector), decreasing = T)
-cytoHubba_vector_cyan_unique <- names(table(cytoHubba_vector))
-cytoHubba_vector_cyan_unique
-length(cytoHubba_vector_cyan_unique)
-write.table(x = cytoHubba_vector_cyan_unique,file = '/Users/mijiarui/RNA-seq/lncRNA_prediction/CPAT_prediction/cytoHubba_brown_module_geneName.txt', row.names = F)
-## exist in >= 8 algorithms and check their coding potential according to CPAT and PLEK
-## CPAT: TU38615, TU11166, TU13810, TU14524, TU17004, TU17140, TU17617, TU24625, TU29445, TU31086, TU31813,
-##       TU38615,TU43443, TU45170, TU45271, TU4839, TU51616, TU5187, TU53164, TU547, TU54953, TU5560,
-##       TU64832, TU67592, TU68230, TU77233, TU78908, TU80024, TU80615, TU89114, TU8929, TU8930, TU97447, TU98365
-##       
-## PLEK: TU38615, TU83796, TU14524, TU16838, TU17004, TU17140, TU24625, TU2684, TU31086, TU35880, 
-##       TU54264, TU55376, TU57001, TU60147, TU76597, TU77233, TU83796, TU89114, TU8930, TU96138
-##       TU96830, TU97447, TU98365
-
-## Overlap: TU38615 (8,LOC, Human | Mouse; zebrafish: gpt2l; nucleus; high expression in beta-cell), 
-##          TU31086(5,----, Human | Mouse; Zebrafish --; cytoplasm, nucleus), 
-##          TU17004(4,RAP1GAP, Human & Mouse; Zebrafish full length; cytoplasm, nucleus; high expression in beta-cell), 
-##          TU17140(1,IKZF3, TNFRSF19, ACYP2, Pdkcc, Gm38907, Pot1b, Human | Mouse; Zebrafish full length; nucleus), 
-##          TU24625(1,RAP1GAP, Human & Mouse; zebrafish full length; cytoplasm, nucleus, high expression in beta-cell),  TU77233(1,---; cytoplasm, nucleus), TU14524(1,---; cytoplasm, nucleus),
-##          TU8930(1, SLC24A2, KCMF1,ZAK, ZFp160, Plekha6, Zkscan7, Human | Mouse; cytoplasm, nucleus), TU97447(1,LOC, Mouse; cytoplasm, nucleus), 
-##          TU98365(1,PSMD2, NBPF7, IFNE, FAM111B, COL3A1, spata1, supt6, Human & Mouse (psmd2) ; cytoplasm, nucleus)
-
-
-
-#====================================================================
+#======================================================================================
 #
-#                     kalrn flanking sequence 
+#                            Cytoscape network analysis 
+#  (MCODE and cytohubba packages) for hub network and hub gene identification 
 #
-#====================================================================
-#####   TU38615
-mart <- useMart('ensembl') 
-ensembl <- useDataset('drerio_gene_ensembl', mart)
-kalrn_zebrafish_flanking <- getBM(attributes = 'entrezgene', filters = c('chromosome_name', 'start', 'end'), values = list(2, 3602294,3838363), mart = ensembl)
-kalrn_zebrafish_flanking
-kalrn_zebrafish_flanking$gene <- c('hat1', 'dlx1a', 'dlx2a', 'itga6a', 'crbrd1', 'dcaf17', 'mettl8','tlk1a', 'gad1a', 'sp5a', 'myo3b', 'kalrna', 'kcnj3a', 'galnt13', 'rprma', 'prpf40a', 'fmnl2a', 'nr4a3a', 'cytip')
-
-ensembl <- useDataset('mmusculus_gene_ensembl', mart)
-kalrn_mouse_flanking <- getBM(attributes = 'entrezgene', filters = c('chromosome_name', 'start', 'end'), values = list(16, 32969073,35514924), mart = ensembl)
-kalrn_mouse_flanking
-kalrn_mouse_flanking$gene <- c('lrch3', 'Iqcg', 'rpl35a', 'lmln', 'osbpl11', 'snx4', 'zpf148', 'slc12a8', 'heg1', 'muc13', 'itgb5', 'umps', 'kalrn', 'ropn1',
-                               'ccdc14', 'mylk', 'hacd2', 'adcy5', 'sec22a', 'pdia5')
-ensembl <- useDataset('hsapiens_gene_ensembl', mart)
-kalrn_human_flanking <- getBM(attributes = 'entrezgene', filters = c('chromosome_name', 'start', 'end'), values = list(3, 123388215  ,125395949), mart = ensembl)
-kalrn_human_flanking$gene <- c('adcy5', 'hacd2', 'mylk-as1', 'mylk', 'mylk-as2', 'ccdc14', 'ropn1', 'kalrn', 'mir5002', 'mir6083', 'umps', 'mir544b',
-                               'itgb5', 'muc13', 'heg1','slc12a8','mir5092', 'znf148')
+#======================================================================================
 
 
 
+#======================================================================================
+#
+#                               Data frame preparation  
+#
+#======================================================================================
+### So, Now we get the gene list, next we need to do is to get several information about the genes for downstream analysis.
+### There are several things we need to do: (1), we need to pick up the promoter regions and use HOMER software (perl script)
+### for TFBS prediction; (2), we need to pick up the flanking genes and perfrom enrichment analysis, and see whether the
+### flanking genes are responsible for certain functions; (3), we need to get the expression matrix for the transcripts for
+### each sample for downstream circos plot visualiation.
 
-
+### So, what we need to do now is to get the coordinate of each transcripts, we have the coordinate and stored in assembly.bed
+### file and let's first have a look at it in R; I have put the chr, start, end, transcript_id in a new file named 
+### assembly_coordinate.txt in the working directory (with all 98528 total transcripts information).
+coordiate_total_transcript <- read.table('assembly.bed', header = F, sep = '\t')
+head(coordiate_total_transcript)
 
 
 
@@ -1004,18 +923,11 @@ kalrn_human_flanking$gene <- c('adcy5', 'hacd2', 'mylk-as1', 'mylk', 'mylk-as2',
 
 
 
-cytohubba_ivory_30genes <- read.csv('cytohubba_ivory_30genes.csv', header = T)
-sort(table(as.vector(as.matrix(cytohubba_ivory_30genes))), decreasing = T)
-# CPAT: TU89152(chr8:8,038,215-8,074,578), 
-#       TU2818(chr1:47,776,158-47,795,909), 
-#       TU42457(chr2:59,127,073-59,167,027),
-#       TU31064(chr17:52,686,801-52,690,132, high expression, meis2a near), 
-#       TU68230(chr3:58,237,791-58,243,202), 
-#       TU7260(chr11:1,289,009-1,291,053), 
-#       TU14147(chr13:7,763,511-7,763,901), 
-#       TU31086(chr17:52,690,277-52,692,381, high expression, meis2a near), 
-#       TU58500(chr24:21,520,391-21,520,978, intronic,lnx2 important for exocrine cell differentiation, near pdx1), 
-#       TU92926(chr9:5,327,117-5,327,687), 
-#       TU31063(chr17:52,686,807-52,690,132)
-#       TU57170(chr23:46,222,963-46,228,837), 
-#       TU63869(chr3:10,050,970-10,065,216), 
+
+
+
+
+
+
+
+
