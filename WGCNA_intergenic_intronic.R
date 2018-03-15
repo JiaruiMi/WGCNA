@@ -561,7 +561,6 @@ if (!gsg$allOK)
 ### axis) and log2_CV (y axis). Log-transformation is used for scale the data and make it more plottable. But before plotting and perform the regression, I need to
 ### add two columns of log2_mean and log2_CV for each transcript.
 
-
 n <- nrow(datExpr0); n
 datExpr0[n+1,] <- apply(datExpr0[c(1:n),],2, function(x){log2(mean(x)+1)}); dim(datExpr0)
 datExpr0[n+2,] <- apply(datExpr0[c(1:n),], 2, function(x){log2(sd(x)/mean(x)+1)}) ; dim(datExpr0)# 使用变异系数（coefficient of variance, CV)较正表达量高低对变异度的影响
@@ -570,6 +569,7 @@ names(datExpr1)[21] <- 'log2_mean';names(datExpr1)[22] <- 'log2_CV'; names(datEx
 head(datExpr1)[21]; head(datExpr1[22]); colnames(datExpr1)
 
 ### Use loess model to fit the curve in order to select the highly variable genes
+#### Plotting the regression line and label the highly variable genes based on certain threshold (though subjective)
 p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
   geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
   geom_smooth(method = lm, col = 'red', na.rm = T) + 
@@ -585,16 +585,19 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
   geom_smooth(method = lm, col = 'red', na.rm = T) + 
   ylim(c(0.4,2.6)) +
   geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
-  theme_classic() +
+  theme_classic() +     ## theme_classic() is from ggplot2 package and it is the only suitable theme for scientific publication.
   geom_label(data=subset(datExpr1, datExpr1$log2_mean > 4 & datExpr1$log2_CV> 1.25), 
                   aes(label=row.names(datExpr1[datExpr1$log2_mean > 4 & datExpr1$log2_CV> 1.25,])), 
                   col= 'black', 
                   nudge_x = 0.3,nudge_y = 0.05, fill = 'green'); p
 
+#### Use loess regression to fit the model
 model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0.2, method = 'loess')
 summary(model_xlog2mean_ylog2CV)
+#### Use prediction to predict the y value (log2_CV) for each x (log2_mean)
 prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
-head(prediction$fit)
+head(prediction$fit)  ## get the y value (log2_CV) point prediction
+#### Further filtering according to the predicted y value point prediction
 datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 2,1:20]; dim(datExpr0)
 
 ### After selection of HVG using loess, let's have a look at the clustering
