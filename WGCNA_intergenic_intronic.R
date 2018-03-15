@@ -945,8 +945,27 @@ promoter_negative_strand
 ### STEP1: get the flank coordiantes in the genome
 ### STEP2: use biomaRt to get the flank gene entrezgene id
 
+#### STEP 1:
+blue_beta_coordinate
+flanking_coordinate <- mutate(.data = blue_beta_coordinate, Start = start - 20000, End = end + 20000)[,c(1,5,6,4)]
+flanking_coordinate
 
-
-
-
-
+#### STEP 2:
+library(biomaRt)
+mart <- useMart('ensembl')
+ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
+listFilters(ensembl)
+flanking_genes <- getBM(attributes = 'entrezgene', 
+      filters = c('chromosome_name','start','end'),
+      values= list(3,55203548,55244872), 
+      mart=ensembl
+)
+dim(flanking_genes)
+View(flanking_genes)
+t(flanking_coordinate[,1:3])
+entrez <- c('325181', '323115', '407672', '569075', '568811', '568908', '798401')
+library(clusterProfiler)
+readable = T
+GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.1,
+               pAdjustMethod = 'BH',qvalueCutoff = 0.2,ont = 'ALL', readable = readable)
+dotplot(BP, split = 'ONTOLOGY') + facet_grid(ONTOLOGY ~., scale = 'free')
