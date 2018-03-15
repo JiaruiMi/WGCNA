@@ -992,3 +992,24 @@ circos_acinal <- blue_beta_expr[,c(1:4,25)]
 circos_beta <- blue_beta_expr[,c(1:4, 26)]
 circos_alpha <- blue_beta_expr[,c(1:4,26)]
 circos_delta <- blue_beta_expr[,c(1:4,27)]
+blue_beta_coordinate
+dir()
+
+### Use a for loop to prepare the link datasets
+link <- read.table('CytoscapeInput-TPM-edges-blue.txt', header = T, sep = '\t')
+link <- link[,1:2]
+for (i in 1:nrow(link)){
+  link$chr[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,1],1]
+  link$start[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,1],2]
+  link$end[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,1],3]
+  link$CHR[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,2], 1]
+  link$Start[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,2],2]
+  link$End[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,2],3]
+}
+link
+
+
+
+
+
+
