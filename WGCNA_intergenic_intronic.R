@@ -600,9 +600,9 @@ head(prediction$fit)  ## get the y value (log2_CV) point prediction
 #### Further filtering according to the predicted y value point prediction
 datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 2,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
 
-filtered_normalized_counts <- datExpr0
-head(filtered_normalized_counts)
-dim(filtered_normalized_counts)
+filtered_TPM_normalized_counts <- datExpr0
+head(filtered_TPM_normalized_counts)
+dim(filtered_TPM_normalized_counts)
 
 ### After selection of HVG using loess, let's have a look at the clustering and see whether the filtering highly variable genes are good enough to distinguish 
 ### different samples (supervised learning)
@@ -810,10 +810,10 @@ head(moduleGenes)
 head(moduleColors)
 blue_module_index <- which(moduleColors == 'blue') # the index of genes which belong to 'blue' module
 length(colnames(datExpr0)[blue_module_index])
-length(rownames(filtered_normalized_counts)[blue_module_index])
+length(rownames(filtered_TPM_normalized_counts)[blue_module_index])
 # 注意datExpr0和filtered_normalized_counts是转置的关系，所以datExpr0的colnames和filtered_normalized_counts的rownames是一致的
 # 都是基因名，相当于后面的probes
-blue_module_transcriptName <- rownames(filtered_normalized_counts)[blue_module_index]
+blue_module_transcriptName <- rownames(filtered_TPM_normalized_counts)[blue_module_index]
 length(blue_module_transcriptName); blue_module_transcriptName
 # 'blue module 有12个基因
 
@@ -870,7 +870,7 @@ for (mod in 1:nrow(table(moduleColors)))
   
   modules = names(table(moduleColors))[mod]
   # Select module probes
-  probes = names(datExpr0)
+  probes = colnames(t(datExpr0))
   inModule = (moduleColors == modules)
   modProbes = probes[inModule]
   modGenes = modProbes
