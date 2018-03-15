@@ -421,7 +421,7 @@ pv.out <- pathview(gene.data = geneList_foldchange_beta_with_acinal_2,pathway.id
 setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lincRNA')
 ## load packages for data visulizations
 library(ggplot2)
-
+library(ggrepel)
 
 ### Summaries
 #### The number of transcripts in intergenic and intronic regions is 16176
@@ -598,9 +598,10 @@ summary(model_xlog2mean_ylog2CV)
 prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
 head(prediction$fit)  ## get the y value (log2_CV) point prediction
 #### Further filtering according to the predicted y value point prediction
-datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 2,1:20]; dim(datExpr0)
+datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 2,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
 
-### After selection of HVG using loess, let's have a look at the clustering
+### After selection of HVG using loess, let's have a look at the clustering and see whether the filtering highly variable genes are good enough to distinguish 
+### different samples (supervised learning)
 library('gplots')
 library('pheatmap')
 library('amap')
