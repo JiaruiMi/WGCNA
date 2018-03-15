@@ -974,6 +974,21 @@ dotplot(BP, split = 'ONTOLOGY') + facet_grid(ONTOLOGY ~., scale = 'free')
 
 ################### Prepare the data list for RCircos plot ######################
 ### For RCircos plot, the most important thing is to prepare the cytoband file, which can be downloaded from
-### UCSC and edited locally (I have put it in the working directory). RCircos can help draw different kinds of 
-### plots and it really dependent on your data. But no matter what you plot, the first three columns should be 
-### the same.
+### UCSC and edited locally (/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/circos). RCircos 
+### can help draw different kinds of plots and it really dependent on your data. But no matter what you plot, 
+### the first three columns should be the same. 
+
+### cytoBand: danRer10.csv
+### Expression matrix is stored 'blue_beta_expr' object; Actually, we can make this expression matrix into 
+### several different expression matrix -- the transcripts expression level in acinal, alpha, beta, delta cells
+### respectively and the mean expression level of these four types of cells in one expression matrix
+blue_beta_expr$acinal <- rowMeans(blue_beta_expr[,c(5,20:24)])
+blue_beta_expr$alpha <- rowMeans(blue_beta_expr[,c(11:15)])
+blue_beta_expr$beta <- rowMeans(blue_beta_expr[,c(6:10)])
+blue_beta_expr$delta <- rowMeans(blue_beta_expr[,c(16:19)])
+dim(blue_beta_expr)
+circos_heatmap <- blue_beta_expr[,c(1:4,25:28)]
+circos_acinal <- blue_beta_expr[,c(1:4,25)]
+circos_beta <- blue_beta_expr[,c(1:4, 26)]
+circos_alpha <- blue_beta_expr[,c(1:4,26)]
+circos_delta <- blue_beta_expr[,c(1:4,27)]
