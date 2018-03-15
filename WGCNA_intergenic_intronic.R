@@ -911,14 +911,39 @@ head(coordiate_total_transcript); dim(coordiate_total_transcript);View(coordiate
 
 ### Pick up the transcripts information of beta gene-module, the transcripts names are stored in 'blue_module_transcriptName' object
 blue_beta_coordinate <- coordiate_total_transcript[coordiate_total_transcript$transcript_ID %in% as.vector(blue_module_transcriptName),]
+blue_beta_coordinate
 #### Here we see that there are several transcripts that are not matched to the autosomal chromosome, but now we don't filter them
 
 ### Next, we add the expression information, the TPM expression matrix is stored in 'data1' object
+blue_beta_expr <- data1[row.names(data1) %in% blue_beta_coordinate$transcript_ID,]
+blue_beta_expr <- cbind(blue_beta_coordinate, blue_beta_expr)
+#### The coordination and expression matrix are stored in 'blue_beta_expr' object
+
+################## Pick up the promoter regions ###################
+### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
+### the both ends. It is good to use 'dplyr' package here.
+library('dplyr')
+promoter_positive_strand <- mutate(.data = blue_beta_coordinate, Start = start -500, End = start)[, c(1,5,6,4)]
+promoter_positive_strand
+promoter_negative_strand <- mutate(.data = blue_beta_coordinate, Start = end, End = end + 500)[,c(1,5,6,4)]
+promoter_negative_strand
+
+
+### Write the table into txt form and the files would be used as input for HOMER
+### Or we can use 'TFBSTools' and 'JASPAR2018' packages, together with 'Biostring'
 
 
 
 
 
+
+################## Pick up flanking genes ###################
+### Normally, the lincRNAs perform their jobs in cis, which means they have their functions locally. It is very important to 
+### identify their flanking genes and the enrichment analysis will give some hints. We can use biomaRt to get the flanking 
+### genes (entrezgene). But the first thing we need to do is to pick up the flanking regions. Normally, we check 10-20 kb regions
+### So, we can divide our work into two steps:
+### STEP1: get the flank coordiantes in the genome
+### STEP2: use biomaRt to get the flank gene entrezgene id
 
 
 
