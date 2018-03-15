@@ -818,16 +818,6 @@ length(blue_module_transcriptName); blue_module_transcriptName
 # 'blue module 有12个基因
 
 
-# 'cyan' module gene
-module <- 'cyan'
-column <- match(module, modNames)
-moduleGenes <- moduleColors == module
-cyan_module_index <- which(moduleColors == 'cyan')
-cyan_module_transcriptName <- rownames(filtered_normalized_counts)[cyan_module_index]
-cyan_module_transcriptName
-
-
-
 
 #####
 names(datExpr0)
@@ -914,8 +904,12 @@ for (mod in 1:nrow(table(moduleColors)))
 ### So, what we need to do now is to get the coordinate of each transcripts, we have the coordinate and stored in assembly.bed
 ### file and let's first have a look at it in R; I have put the chr, start, end, transcript_id in a new file named 
 ### assembly_coordinate.txt in the working directory (with all 98528 total transcripts information).
-coordiate_total_transcript <- read.table('assembly.bed', header = F, sep = '\t')
-head(coordiate_total_transcript)
+coordiate_total_transcript <- read.table('assembly_coordiate.txt', header = F, sep = ' ')
+head(coordiate_total_transcript); dim(coordiate_total_transcript)
+colnames(coordiate_total_transcript) <- c('chr', 'start', 'end', 'transcript_ID')
+
+
+### Pick up the transcripts information of beta gene-module, the transcripts names are stored in 'blue_module_transcriptName' object
 
 
 
