@@ -508,6 +508,10 @@ intergenic_intronic_exon_highThan1_length_highThan_200 <- intergenic_intronic_tr
 dim(intergenic_intronic_exon_highThan1_length_highThan_200)
 
 
+### Here we got the final expression matrix of TPM of intergenic and intronic regions of transcripts with >= 2 exons and length higher than 200bp
+### the expression matrix is store in the object of 'intergenic_intronic_exon_highThan1_length_highThan_200'
+
+
 ############# STEP 1: Expression data and Phenotype data Preparation ##############
 ## Load package and basic setting
 library(WGCNA)
@@ -517,11 +521,6 @@ options(stringsAsFactors = F)
 
 ####### read in the expression matrix ############
 # counts/FPKM/RPKM/normalized counts are all can be used in WGCNA, the batch information is better to be taken into account
-# head(normalized_counts)
-# dim(normalized_counts)
-# rownames(normalized_counts)
-# colnames(normalized_counts)
-# datExpr0 <- as.data.frame(t(normalized_counts))
 # Instead of using NumReads from Salmon, it is better to use TPM 
 # All you need to change is the expression matrix
 # data1  <- read.table('merge_tpm.txt', header = T, row.names = 1)
@@ -553,6 +552,16 @@ if (!gsg$allOK)
 ### normalized counts such as RPKM and log transformed counts are the input
 ### You can also use 'apply' function to select most variable genes (5000 genes or so) for downstream analysis
 ### Pick a threshold, normally genes for WGCNA should not be too large (< 20000)
+
+### How do we pick up the threshold?
+### The idea is we need to pick up the genes with certain amounts of expression level and are highly variable. The thing is for lowly-expressed genes, the variable
+### (coeffiecient of variance) is commonly larger than those highly expressed genes because of technical noise. Therefore, using var or CV and set them at a certain
+### value is not an optimal way to get the results. The good strategy which is also applied in different clever packages is to perform a regression model and select
+### those genes above the regression line (more precisely, the prediction value). Here I do the regression model based on lowess/loess regression of log2_mean (x
+### axis) and log2_CV (y axis). Log-transformation is used for scale the data and make it more plottable. But before plotting and perform the regression, I need to
+### add two columns of log2_mean and log2_CV for each transcript.
+
+
 n <- nrow(datExpr0); n
 datExpr0[n+1,] <- apply(datExpr0[c(1:n),],2, function(x){log2(mean(x)+1)}); dim(datExpr0)
 datExpr0[n+2,] <- apply(datExpr0[c(1:n),], 2, function(x){log2(sd(x)/mean(x)+1)}) ; dim(datExpr0)# 使用变异系数（coefficient of variance, CV)较正表达量高低对变异度的影响
