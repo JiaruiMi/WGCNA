@@ -600,6 +600,10 @@ head(prediction$fit)  ## get the y value (log2_CV) point prediction
 #### Further filtering according to the predicted y value point prediction
 datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 2,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
 
+filtered_normalized_counts <- datExpr0
+head(filtered_normalized_counts)
+dim(filtered_normalized_counts)
+
 ### After selection of HVG using loess, let's have a look at the clustering and see whether the filtering highly variable genes are good enough to distinguish 
 ### different samples (supervised learning)
 library('gplots')
@@ -724,11 +728,10 @@ labeledHeatmap(Matrix = moduleTraitCor,
                cex.text = 0.5,
                zlim <- c(-1,1),
                main = paste('Module-trait relationships'))
-### Here we found that MEcyan and MEbrown modules are highly associated with beta-cell (celltype/cell function...)
 
 
 ##################### Visualizing the gene network #######################
-nSelect <- 153
+nSelect <- 109
 set.seed(10)
 select <- sample(nGene, size = nSelect)
 selectTOM <- dissTOM[select, select]
@@ -798,21 +801,21 @@ modProbes_pink <- probes[inModule]; length(modProbes_pink)
 modProbes_black
 
 # 也可以指定感兴趣的模块进行分析，每一个module都分配了一个color
-# 比如对module = ‘yellow’ 的模块进行分析
-# 'yellow' module gene
-module <- 'yellow'
+# 比如对module = ‘blue’ 的模块进行分析
+# 'blue' module gene
+module <- 'blue'
 column <- match(module, modNames)
 moduleGenes <- moduleColors == module
 head(moduleGenes)
 head(moduleColors)
-yellow_module_index <- which(moduleColors == 'yellow') # the index of genes which belong to 'brown' module
-length(colnames(datExpr0)[yellow_module_index])
-length(rownames(filtered_normalized_counts)[yellow_module_index])
+blue_module_index <- which(moduleColors == 'blue') # the index of genes which belong to 'blue' module
+length(colnames(datExpr0)[blue_module_index])
+length(rownames(filtered_normalized_counts)[blue_module_index])
 # 注意datExpr0和filtered_normalized_counts是转置的关系，所以datExpr0的colnames和filtered_normalized_counts的rownames是一致的
 # 都是基因名，相当于后面的probes
-yellow_module_transcriptName <- rownames(filtered_normalized_counts)[yellow_module_index]
-length(yellow_module_transcriptName); yellow_module_transcriptName
-# 'yellow' module 有1095个基因
+blue_module_transcriptName <- rownames(filtered_normalized_counts)[blue_module_index]
+length(blue_module_transcriptName); blue_module_transcriptName
+# 'blue module 有12个基因
 
 
 # 'cyan' module gene
@@ -859,8 +862,9 @@ write.table(geneInfo, file = "10_GS_and_MM.xls",sep="\t",row.names=F)
 
 
 ########################### Exporting to Cytoscape all one by one ##########################
-# Select each module
-
+## Reset workding directory to export the node and edge data
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/WGCNA')
+## Select each module
 for (mod in 1:nrow(table(moduleColors)))
 {
   
