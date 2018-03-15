@@ -905,15 +905,15 @@ for (mod in 1:nrow(table(moduleColors)))
 ### file and let's first have a look at it in R; I have put the chr, start, end, transcript_id in a new file named 
 ### assembly_coordinate.txt in the working directory (with all 98528 total transcripts information).
 coordiate_total_transcript <- read.table('assembly_coordiate.txt', header = F, sep = ' ')
-head(coordiate_total_transcript); dim(coordiate_total_transcript)
 colnames(coordiate_total_transcript) <- c('chr', 'start', 'end', 'transcript_ID')
+head(coordiate_total_transcript); dim(coordiate_total_transcript);View(coordiate_total_transcript)
 
 
 ### Pick up the transcripts information of beta gene-module, the transcripts names are stored in 'blue_module_transcriptName' object
+blue_beta_coordinate <- coordiate_total_transcript[coordiate_total_transcript$transcript_ID %in% as.vector(blue_module_transcriptName),]
+#### Here we see that there are several transcripts that are not matched to the autosomal chromosome, but now we don't filter them
 
-
-
-
+### Next, we add the expression information, the TPM expression matrix is stored in 'data1' object
 
 
 
