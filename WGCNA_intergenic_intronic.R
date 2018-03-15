@@ -969,3 +969,11 @@ readable = T
 GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.1,
                pAdjustMethod = 'BH',qvalueCutoff = 0.2,ont = 'ALL', readable = readable)
 dotplot(BP, split = 'ONTOLOGY') + facet_grid(ONTOLOGY ~., scale = 'free')
+
+
+
+################### Prepare the data list for RCircos plot ######################
+### For RCircos plot, the most important thing is to prepare the cytoband file, which can be downloaded from
+### UCSC and edited locally (I have put it in the working directory). RCircos can help draw different kinds of 
+### plots and it really dependent on your data. But no matter what you plot, the first three columns should be 
+### the same.
