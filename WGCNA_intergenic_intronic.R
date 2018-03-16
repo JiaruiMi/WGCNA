@@ -900,6 +900,7 @@ for (mod in 1:nrow(table(moduleColors)))
 ### for TFBS prediction; (2), we need to pick up the flanking genes and perfrom enrichment analysis, and see whether the
 ### flanking genes are responsible for certain functions; (3), we need to get the expression matrix for the transcripts for
 ### each sample for downstream circos plot visualiation.
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/WGCNA')
 
 ### So, what we need to do now is to get the coordinate of each transcripts, we have the coordinate and stored in assembly.bed
 ### file and let's first have a look at it in R; I have put the chr, start, end, transcript_id in a new file named 
@@ -911,7 +912,7 @@ colnames(coordinate_total_transcript) <- c('chr', 'start', 'end', 'transcript_ID
 
 
 ### Pick up the transcripts information of beta gene-module, the transcripts names are stored in 'blue_module_transcriptName' object
-blue_beta_coordinate <- coordiate_total_transcript[coordinate_total_transcript$transcript_ID %in% as.vector(blue_module_transcriptName),]
+blue_beta_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% as.vector(blue_module_transcriptName),]
 blue_beta_coordinate
 #### Here we see that there are several transcripts that are not matched to the autosomal chromosome, but now we don't filter them
 
@@ -935,7 +936,6 @@ promoter_negativeLabel$strand <- rep('-', times = nrow(promoter_negativeLabel))
 promoter <- rbind(promoter_positiveLabel, promoter_negativeLabel)
 promoter <- data.frame(transcript_ID = promoter$transcript_ID, promoter[,1:3], strand = promoter$strand) 
 head(promoter)
-# promoter <- filter(promoter, chr %in% 1:25)
 promoter <- promoter[1:6,]
 write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter.bed', 
             sep = '\t', row.names = F, quote = F)
