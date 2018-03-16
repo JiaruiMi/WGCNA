@@ -934,10 +934,12 @@ promoter_positiveLabel$strand <- rep('+', times = nrow(promoter_positiveLabel))
 promoter_negativeLabel <- rbind(promoter_left_strand, promoter_right_strand)
 promoter_negativeLabel$strand <- rep('-', times = nrow(promoter_negativeLabel))
 promoter <- rbind(promoter_positiveLabel, promoter_negativeLabel)
-promoter <- data.frame(transcript_ID = promoter$transcript_ID, promoter[,1:3], strand = promoter$strand) 
-head(promoter)
-promoter <- promoter[1:6,]
-write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter.bed', 
+for (i in 1:nrow(promoter)){## here we found that the 'chr' does not have 'chr' label, we need to add it
+  promoter$Chr[i] <- paste0('chr',promoter$chr[i])
+}
+promoter <- data.frame(transcript_ID = promoter$transcript_ID, chr = promoter$Chr, promoter[,2:3], strand = promoter$strand) 
+head(promoter); dim(promoter)
+write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter.txt', 
             sep = '\t', row.names = F, quote = F)
 
 
