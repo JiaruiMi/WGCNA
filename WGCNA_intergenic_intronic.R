@@ -1021,7 +1021,8 @@ for (i in 1:nrow(link)){
   link$End[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,2],3]
 }
 link
-
+link <- link[,c(-1,-2)]
+write.csv(x = link, file = 'link.csv', quote = F)
 
 
 
