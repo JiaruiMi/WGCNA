@@ -506,6 +506,7 @@ exon_1 <- read.csv('exon_1_intergenic_intronic.csv', header = F)
 intergenic_intronic_exon_highThan1_length_highThan_200 <- intergenic_intronic_transcript_moreThan_200[!row.names(intergenic_intronic_transcript_moreThan_200)  
                                                                                                       %in% exon_1$V1,]
 dim(intergenic_intronic_exon_highThan1_length_highThan_200)
+head(intergenic_intronic_exon_highThan1_length_highThan_200)
 
 
 ### Here we got the final expression matrix of TPM of intergenic and intronic regions of transcripts with >= 2 exons and length higher than 200bp
@@ -575,7 +576,7 @@ head(datExpr1)[21]; head(datExpr1[22]); colnames(datExpr1)
 ### Use loess model to fit the curve in order to select the highly variable genes
 #### Plotting the regression line and label the highly variable genes based on certain threshold (though subjective)
 p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
-  geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
+  geom_smooth(span = 1, method = 'loess', na.rm = T) + 
   geom_smooth(method = lm, col = 'red', na.rm = T) + 
   ylim(c(0.4,2.6)) +
   geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
@@ -591,9 +592,9 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
   geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
   theme_classic() +     ## theme_classic() is from ggplot2 package and it is the only suitable theme for scientific publication.
   geom_label(data=subset(datExpr1, datExpr1$log2_mean > 4 & datExpr1$log2_CV> 1.25), 
-                  aes(label=row.names(datExpr1[datExpr1$log2_mean > 4 & datExpr1$log2_CV> 1.25,])), 
-                  col= 'black', 
-                  nudge_x = 0.3,nudge_y = 0.05, fill = 'green'); p
+             aes(label=row.names(datExpr1[datExpr1$log2_mean > 4 & datExpr1$log2_CV> 1.25,])), 
+             col= 'black', 
+             nudge_x = 0.3,nudge_y = 0.05, fill = 'green'); p
 
 #### Use loess regression to fit the model
 model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0.2, method = 'loess')
@@ -602,7 +603,7 @@ summary(model_xlog2mean_ylog2CV)
 prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
 head(prediction$fit)  ## get the y value (log2_CV) point prediction
 #### Further filtering according to the predicted y value point prediction
-datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 1,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
+datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 0.2,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
 
 filtered_TPM_normalized_counts <- datExpr0
 head(filtered_TPM_normalized_counts)
@@ -671,7 +672,7 @@ geneTree <- hclust(as.dist(dissTOM), method = 'average')   # This step takes som
 par(mfrow = c(1,1))
 plot(geneTree, xlab = '', sub = '', main = 'Gene clustering on TOM-based dissimilarity', labels = F, hang = 0.04)
 # We like large modules, so we set the minimum module size relatively high
-minModuleSize <- 15
+minModuleSize <- 50
 # set cutHeight, otherwise the function will set a cutHeight automatically
 # The next step may take some time
 dynamicMods <- cutreeDynamic(dendro = geneTree, distM = dissTOM, deepSplit = 2, pamRespectsDendro = F, minClusterSize = minModuleSize)
@@ -688,7 +689,7 @@ MEDiss <- 1-cor(MEs)
 METree <- hclust(as.dist(MEDiss), method = 'average')
 par(mfrow = c(1,1))
 plot(METree, main = 'Clustering of module eigengene', xlab = '', sub = '')
-MEDissThres = 0.3 # set the threshold to make some branches together
+MEDissThres = 0.6 # set the threshold to make some branches together
 abline(h = MEDissThres, col = 'red')
 Merge <- mergeCloseModules(t(datExpr0), dynamicColors, cutHeight = MEDissThres, verbose = 3)
 mergedColors <- Merge$colors
@@ -809,7 +810,7 @@ modProbes_black
 # 也可以指定感兴趣的模块进行分析，每一个module都分配了一个color
 # 比如对module = ‘blue’ 的模块进行分析
 # 'blue' module gene
-module <- c('black')
+module <- c('blue')
 column <- match(module, modNames)
 moduleGenes <- moduleColors == module
 head(moduleGenes)
@@ -827,7 +828,7 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
   geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
   geom_smooth(method = lm, col = 'red', na.rm = T) + 
   ylim(c(0.4,2.6)) +
-  geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
+  geom_vline(xintercept = seq(0,1,0.2), col = 'darkgreen', lty = 2) +
   theme_classic() +
   geom_text_repel(data=subset(datExpr1, rownames(datExpr1) %in% test_module_transcriptName), 
                   aes(label=row.names(datExpr1[rownames(datExpr1) %in% test_module_transcriptName,])), 
@@ -924,14 +925,29 @@ setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_dat
 ### assembly_coordinate.txt in the working directory (with all 98528 total transcripts information).
 coordinate_total_transcript <- read.table('assembly_coordiate.txt', header = F, sep = ' ')
 colnames(coordinate_total_transcript) <- c('chr', 'start', 'end', 'transcript_ID'); dim(coordinate_total_transcript)
+head(coordinate_total_transcript)
+lincRNA_coordinate_expr <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% rownames(data1),]
+lincRNA_coordinate_expr <- cbind(lincRNA_coordinate_expr,data1)
+lincRNA_coordinate_expr <- lincRNA_coordinate_expr[lincRNA_coordinate_expr$chr %in% c(1:25),]
+for (i in 1:nrow(lincRNA_coordinate_expr)){
+  lincRNA_coordinate_expr$Chr[i] <- paste0('chr',lincRNA_coordinate_expr$chr[i])
+}
+head(lincRNA_coordinate_expr); 
+lincRNA_coordinate_expr <- lincRNA_coordinate_expr[,c(25,2:24)]
 ### head(coordinate_total_transcript); dim(coordinate_total_transcript);View(coordinate_total_transcript)
 ### 'coordinate_total_transcript' object contains all the coordinate for 98000+ transcripts
+### 'lincRNA_coordinate_expr' object is the coordinate and expression matrix of 4764 transcripts with exon >= 2, length > 200
+### and with known chromosome names (without KN...)
+lincRNA_acinal <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMeans(lincRNA_coordinate_expr[,c(5,20:24)]))
+lincRNA_beta <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMeans(lincRNA_coordinate_expr[,6:10]))
+lincRNA_alpha <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMeans(lincRNA_coordinate_expr[,11:15]))
+lincRNA_delta <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMeans(lincRNA_coordinate_expr[,16:19]))
 
 
 ### Pick up the transcripts information of beta gene-module, the transcripts names are stored in 'blue_module_transcriptName' object
 test_beta_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% as.vector(test_module_transcriptName),]
-test_beta_coordinate
-test_beta_coordinate <- test_beta_coordinate[1:27,]
+test_beta_coordinate;dim(test_beta_coordinate)
+test_beta_coordinate <- test_beta_coordinate[1:232,]  # 'black' 1-27, 'brown' 1-30
 #### Here we see that there are several transcripts that are not matched to the autosomal chromosome, but now we don't filter them
 
 ### Next, we add the expression information, the TPM expression matrix is stored in 'data1' object
@@ -961,9 +977,9 @@ head(promoter); dim(promoter)
 promoter
 promoter_bedtools <- promoter[,c(2:4,1,5)]
 promoter_bedtools
-write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter.txt', 
+write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter_blue.txt', 
             sep = '\t', row.names = F, col.names = F, quote = F)
-write.table(x = promoter_bedtools, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter_bed.txt',
+write.table(x = promoter_bedtools, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter_bed_blue.txt',
             sep = '\t', row.names = F, col.names = F, quote = F)
 
 ### Write the table into txt form and the files would be used as input for HOMER
@@ -993,9 +1009,9 @@ mart <- useMart('ensembl')
 ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
 listFilters(ensembl)
 flanking_genes <- getBM(attributes = 'entrezgene', 
-      filters = c('chromosome_name','start','end'),
-      values= list(3,55203548,55244872), 
-      mart=ensembl
+                        filters = c('chromosome_name','start','end'),
+                        values= list(3,55203548,55244872), 
+                        mart=ensembl
 )
 dim(flanking_genes)
 View(flanking_genes)
@@ -1051,7 +1067,83 @@ link
 link <- link[,c(-1,-2)]
 write.csv(x = link, file = 'link.csv', quote = F)
 
+####################### Circos plot ############################
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/circos')
+library(RCircos)
+
+#### To draw Circos plot, we need to prepare three files, the file with chromosome information (if without
+#### a complete cytoband available in UCSC, you can edit it a little bit), bed file and link file
+#### The chromosome information is stored in danRer10_ref.csv(with chromosome, chromstart, chromend, band
+#### and stain, in total five columns);
+#### It is better to prepare file with different information into different files
+
+cytoBandIdelgram = read.csv('danRer10_ref.csv', header = T)
+chr.exclude <- NULL
+cyto.info <- cytoBandIdelgram
+tracks.inside <- 10
+tracks.outside <- 0
+RCircos.Set.Core.Components(cyto.info, chr.exclude, tracks.inside, tracks.outside)
+RCircos.List.Plot.Parameters() # show inner parameters, e.g. text.size, heatmap.color
+
+### Modifying RCircos core components
+rcircos.param <- RCircos.Get.Plot.Parameters()
+rcircos.param$text.size <- 0.5
+RCircos.Reset.Plot.Parameters(rcircos.param)  ## 确认重新设置，这个时候text.size = 0.5
+RCircos.List.Plot.Parameters()
+
+RCircos.Set.Plot.Area()  ##设置画布区域，每次重新画图，哪怕是修改都有重新铺画板
+RCircos.Chromosome.Ideogram.Plot()  ## 画染色体的最外圈
+
+### Gene labels
+library(dplyr)
+RCircos.Gene.Label.Data <- read.csv('beta_lincRNA.csv', header = T)
+RCircos.Gene.Label.Data <- sample_n(tbl = RCircos.Gene.Label.Data, size = 100, replace = F)
+table(RCircos.Gene.Label.Data$Chr)
+str(RCircos.Gene.Label.Data)
+name.col <- 4
+side <- 'in'
+track.num <- 1
+RCircos.Gene.Connector.Plot(genomic.data = RCircos.Gene.Label.Data, # 画连接器
+                            track.num = track.num, side = side)
+track.num <- 2
+RCircos.Gene.Name.Plot(gene.data = RCircos.Gene.Label.Data, 
+                       name.col = name.col, track.num = track.num, side = side)
 
 
 
+### Line
+RCircos.Line.Data <- lincRNA_beta
+data.col <- 5
+track.num <- 5
+side <- 'in'
+RCircos.Line.Plot(line.data = RCircos.Line.Data, data.col = data.col,
+                  track.num = track.num, is.sorted = F)
+
+
+### Line
+RCircos.Line.Data <- lincRNA_alpha
+data.col <- 5
+track.num <- 6
+side <- 'in'
+RCircos.Line.Plot(line.data = RCircos.Line.Data, data.col = data.col,
+                  track.num = track.num, is.sorted = F)
+
+
+### Line
+RCircos.Line.Data <- lincRNA_delta
+data.col <- 5
+track.num <- 7
+side <- 'in'
+RCircos.Line.Plot(line.data = RCircos.Line.Data, data.col = data.col,
+                  track.num = track.num, is.sorted = F)
+
+
+
+
+### Histogram
+RCircos.Histogram.Data <- lincRNA_alpha
+data.col <- 5
+track.num <- 7
+side <- 'in'
+RCircos.Histogram.Plot(hist.data = RCircos.Histogram.Data, data.col = data.col, track.num = track.num, side = side)
 
