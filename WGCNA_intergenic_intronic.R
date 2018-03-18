@@ -433,7 +433,7 @@ library(ggrepel)
 ## reads.csv detects the number of columns according to the first five rows.
 ## To prepare for the dataframe, first you need to know the max number of exons for the transcripts
 num_exons_2plus <- read.csv('number_exons_2plus.csv', header = F)
-max(num_exons_2plus) # the maximum number of exons is 35
+dim(num_exons_2plus); max(num_exons_2plus) # number of transcripts with exons >= 2 is 5600; the maximum number of exons is 35
 ggplot(data = num_exons_2plus, aes(x = V1)) + geom_histogram(bins = 35)
 summary(num_exons_2plus) 
 ### the mean exon numbers for new intergenic/intronic transcripts with >= 2 exons is 3.337, the median is 2
@@ -442,7 +442,7 @@ summary(num_exons_2plus)
 ### Filter out those with transcript length < 200
 length_exons_2plus <- read.table('exon_2plus.csv', header = FALSE, sep = ",", 
                                  col.names = paste0("V",seq_len(35)), fill = TRUE)
-head(length_exons_2plus)
+head(length_exons_2plus); dim(length_exons_2plus)
 table(rowSums(length_exons_2plus, na.rm = T) < 200)
 which(rowSums(length_exons_2plus, na.rm = T) < 200)
 #### In transcripts with exons >= 2 (5600), transcripts with length < 200 = 7, >= 200 is 5593
@@ -458,9 +458,9 @@ summary(num_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]) 
 
 num_exons_inter_intro <- read.csv('number_exons_assembly_intergenic_intronic.csv', header = F)
 ggplot(data = num_exons_inter_intro, aes(x = V1)) + geom_histogram(bins = 35)
-summary(num_exons_inter_intro)
+summary(num_exons_inter_intro); dim(num_exons_inter_intro)
 ### the mean exon numbers for intergenic/intronic transcripts is 1.809, the median is 1
-
+### the total number of intergenic/intronic transcript is 16176
 
 ### Filter out those with transcripts length < 200
 length_exons_assembly_intergenic_intronic <- read.table('exon_assembly_intergenic_intronic.csv', header = FALSE, sep = ",", 
@@ -510,6 +510,8 @@ dim(intergenic_intronic_exon_highThan1_length_highThan_200)
 
 ### Here we got the final expression matrix of TPM of intergenic and intronic regions of transcripts with >= 2 exons and length higher than 200bp
 ### the expression matrix is store in the object of 'intergenic_intronic_exon_highThan1_length_highThan_200'
+write.csv(x = intergenic_intronic_exon_highThan1_length_highThan_200, 
+          file = 'intergenic_intronic_exon_highThan1_length_highThan_200.csv', quote = F)
 
 
 ############# STEP 1: Expression data and Phenotype data Preparation ##############
@@ -526,6 +528,8 @@ options(stringsAsFactors = F)
 # data1  <- read.table('merge_tpm.txt', header = T, row.names = 1)
 # data1 <- normalized_counts
 data1 <- intergenic_intronic_exon_highThan1_length_highThan_200   # For TPM
+data1 <- read.csv('intergenic_intronic_exon_highThan1_length_highThan_200.csv', header = T, row.names = 1)
+dim(data1); head(data1)
 datExpr0 <- as.data.frame(t(data1)); dim(datExpr0)
 # After transpose, have a look at your data
 # dim(datExpr0)    
@@ -578,7 +582,7 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
   theme_classic() +
   geom_text_repel(data=subset(datExpr1, datExpr1$log2_mean > 2 & datExpr1$log2_CV> 1.25), 
                   aes(label=row.names(datExpr1[datExpr1$log2_mean > 2 & datExpr1$log2_CV> 1.25,])), 
-                  col= 'black', nudge_x = 0.5); p
+                  col= 'black', nudge_x = 0.5, segment.colour = 'gray'); p
 
 p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
   geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
@@ -598,7 +602,7 @@ summary(model_xlog2mean_ylog2CV)
 prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
 head(prediction$fit)  ## get the y value (log2_CV) point prediction
 #### Further filtering according to the predicted y value point prediction
-datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 2,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
+datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 1,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
 
 filtered_TPM_normalized_counts <- datExpr0
 head(filtered_TPM_normalized_counts)
@@ -667,7 +671,7 @@ geneTree <- hclust(as.dist(dissTOM), method = 'average')   # This step takes som
 par(mfrow = c(1,1))
 plot(geneTree, xlab = '', sub = '', main = 'Gene clustering on TOM-based dissimilarity', labels = F, hang = 0.04)
 # We like large modules, so we set the minimum module size relatively high
-minModuleSize <- 8
+minModuleSize <- 15
 # set cutHeight, otherwise the function will set a cutHeight automatically
 # The next step may take some time
 dynamicMods <- cutreeDynamic(dendro = geneTree, distM = dissTOM, deepSplit = 2, pamRespectsDendro = F, minClusterSize = minModuleSize)
@@ -684,7 +688,7 @@ MEDiss <- 1-cor(MEs)
 METree <- hclust(as.dist(MEDiss), method = 'average')
 par(mfrow = c(1,1))
 plot(METree, main = 'Clustering of module eigengene', xlab = '', sub = '')
-MEDissThres = 0.25 # set the threshold to make some branches together
+MEDissThres = 0.3 # set the threshold to make some branches together
 abline(h = MEDissThres, col = 'red')
 Merge <- mergeCloseModules(t(datExpr0), dynamicColors, cutHeight = MEDissThres, verbose = 3)
 mergedColors <- Merge$colors
@@ -698,6 +702,8 @@ colorOrder <- c('grey', standardColors(50))
 moduleLabels <- match(moduleColors, colorOrder)-1
 moduleLabels
 MEs <- mergedMEs
+
+
 # The next save step can take some time!
 save(MEs, file = 'MEs_networkConstruction-stepBystep.RData')
 save(TOM, file = 'TOM_networkConstruction-stepBystep.RData')
@@ -731,7 +737,7 @@ labeledHeatmap(Matrix = moduleTraitCor,
 
 
 ##################### Visualizing the gene network #######################
-nSelect <- 109
+nSelect <- 300
 set.seed(10)
 select <- sample(nGene, size = nSelect)
 selectTOM <- dissTOM[select, select]
@@ -792,7 +798,7 @@ for (trait in traitNames){
 
 ########### 提取指定模块的基因名 ###############
 # Select module
-module = 'black'
+module = 'yellow'
 # Select module probes
 probes <- colnames(datExpr0)
 inModule <- probes[moduleColors == module]
@@ -803,19 +809,30 @@ modProbes_black
 # 也可以指定感兴趣的模块进行分析，每一个module都分配了一个color
 # 比如对module = ‘blue’ 的模块进行分析
 # 'blue' module gene
-module <- 'blue'
+module <- c('black')
 column <- match(module, modNames)
 moduleGenes <- moduleColors == module
 head(moduleGenes)
 head(moduleColors)
-blue_module_index <- which(moduleColors == 'blue') # the index of genes which belong to 'blue' module
-length(colnames(datExpr0)[blue_module_index])
-length(rownames(filtered_TPM_normalized_counts)[blue_module_index])
+test_module_index <- which(moduleColors == module) # the index of genes which belong to 'blue' module
+length(colnames(datExpr0)[test_module_index])
+length(rownames(filtered_TPM_normalized_counts)[test_module_index])
 # 注意datExpr0和filtered_normalized_counts是转置的关系，所以datExpr0的colnames和filtered_normalized_counts的rownames是一致的
 # 都是基因名，相当于后面的probes
-blue_module_transcriptName <- rownames(filtered_TPM_normalized_counts)[blue_module_index]
-length(blue_module_transcriptName); blue_module_transcriptName
-# 'blue module 有12个基因
+test_module_transcriptName <- rownames(filtered_TPM_normalized_counts)[test_module_index]
+length(test_module_transcriptName); test_module_transcriptName
+# test module 有12个基因
+head(datExpr1)
+p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
+  geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
+  geom_smooth(method = lm, col = 'red', na.rm = T) + 
+  ylim(c(0.4,2.6)) +
+  geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
+  theme_classic() +
+  geom_text_repel(data=subset(datExpr1, rownames(datExpr1) %in% test_module_transcriptName), 
+                  aes(label=row.names(datExpr1[rownames(datExpr1) %in% test_module_transcriptName,])), 
+                  col= 'black', nudge_x = 0.5, segment.colour = 'gray'); p
+
 
 
 
@@ -912,22 +929,24 @@ colnames(coordinate_total_transcript) <- c('chr', 'start', 'end', 'transcript_ID
 
 
 ### Pick up the transcripts information of beta gene-module, the transcripts names are stored in 'blue_module_transcriptName' object
-blue_beta_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% as.vector(blue_module_transcriptName),]
-blue_beta_coordinate
+test_beta_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% as.vector(test_module_transcriptName),]
+test_beta_coordinate
+test_beta_coordinate <- test_beta_coordinate[1:27,]
 #### Here we see that there are several transcripts that are not matched to the autosomal chromosome, but now we don't filter them
 
 ### Next, we add the expression information, the TPM expression matrix is stored in 'data1' object
-blue_beta_expr <- data1[row.names(data1) %in% blue_beta_coordinate$transcript_ID,]
-blue_beta_expr <- cbind(blue_beta_coordinate, blue_beta_expr)
+test_beta_expr <- data1[row.names(data1) %in% test_beta_coordinate$transcript_ID,]
+test_beta_expr <- cbind(test_beta_coordinate, test_beta_expr)
+test_beta_expr
 #### The coordination and expression matrix are stored in 'blue_beta_expr' object
 
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
 library('dplyr')
-promoter_left_strand <- mutate(.data = blue_beta_coordinate, Start = start -500, End = start)[, c(1,5,6,4)]
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -1000, End = start)[, c(1,5,6,4)]
 promoter_left_strand
-promoter_right_strand <- mutate(.data = blue_beta_coordinate, Start = end, End = end + 500)[,c(1,5,6,4)]
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end, End = end + 1000)[,c(1,5,6,4)]
 promoter_right_strand
 promoter_positiveLabel <- rbind(promoter_left_strand, promoter_right_strand)
 promoter_positiveLabel$strand <- rep('+', times = nrow(promoter_positiveLabel))
@@ -939,9 +958,13 @@ for (i in 1:nrow(promoter)){## here we found that the 'chr' does not have 'chr' 
 }
 promoter <- data.frame(transcript_ID = promoter$transcript_ID, chr = promoter$Chr, promoter[,2:3], strand = promoter$strand) 
 head(promoter); dim(promoter)
+promoter
+promoter_bedtools <- promoter[,c(2:4,1,5)]
+promoter_bedtools
 write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter.txt', 
-            sep = '\t', row.names = F, quote = F)
-
+            sep = '\t', row.names = F, col.names = F, quote = F)
+write.table(x = promoter_bedtools, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter_bed.txt',
+            sep = '\t', row.names = F, col.names = F, quote = F)
 
 ### Write the table into txt form and the files would be used as input for HOMER
 ### Or we can use 'TFBSTools' and 'JASPAR2018' packages, together with 'Biostring'
@@ -996,29 +1019,33 @@ dotplot(BP, split = 'ONTOLOGY') + facet_grid(ONTOLOGY ~., scale = 'free')
 ### Expression matrix is stored 'blue_beta_expr' object; Actually, we can make this expression matrix into 
 ### several different expression matrix -- the transcripts expression level in acinal, alpha, beta, delta cells
 ### respectively and the mean expression level of these four types of cells in one expression matrix
-blue_beta_expr$acinal <- rowMeans(blue_beta_expr[,c(5,20:24)])
-blue_beta_expr$alpha <- rowMeans(blue_beta_expr[,c(11:15)])
-blue_beta_expr$beta <- rowMeans(blue_beta_expr[,c(6:10)])
-blue_beta_expr$delta <- rowMeans(blue_beta_expr[,c(16:19)])
-dim(blue_beta_expr)
-circos_heatmap <- blue_beta_expr[,c(1:4,25:28)]
-circos_acinal <- blue_beta_expr[,c(1:4,25)]
-circos_beta <- blue_beta_expr[,c(1:4, 26)]
-circos_alpha <- blue_beta_expr[,c(1:4,26)]
-circos_delta <- blue_beta_expr[,c(1:4,27)]
-blue_beta_coordinate
+for (i in 1:nrow(test_beta_expr)){
+  test_beta_expr$Chr[i] <- paste0('chr',test_beta_expr$chr[i])
+}
+test_beta_expr <- test_beta_expr[,c(25,2:24)]
+head(test_beta_expr);dim(test_beta_expr)
+test_beta_expr$acinal <- rowMeans(test_beta_expr[,c(5,20:24)])
+test_beta_expr$alpha <- rowMeans(test_beta_expr[,c(11:15)])
+test_beta_expr$beta <- rowMeans(test_beta_expr[,c(6:10)])
+test_beta_expr$delta <- rowMeans(test_beta_expr[,c(16:19)])
+circos_heatmap <- test_beta_expr[,c(1:4,25:28)]
+circos_acinal <- test_beta_expr[,c(1:4,25)]
+circos_beta <- test_beta_expr[,c(1:4, 26)]
+circos_alpha <- test_beta_expr[,c(1:4,26)]
+circos_delta <- test_beta_expr[,c(1:4,27)]
+test_beta_coordinate
 dir()
 
 ### Use a for loop to prepare the link datasets
 link <- read.table('CytoscapeInput-TPM-edges-blue.txt', header = T, sep = '\t')
 link <- link[,1:2]
 for (i in 1:nrow(link)){
-  link$chr[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,1],1]
-  link$start[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,1],2]
-  link$end[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,1],3]
-  link$CHR[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,2], 1]
-  link$Start[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,2],2]
-  link$End[i] <- blue_beta_coordinate[blue_beta_coordinate$transcript_ID == link[i,2],3]
+  link$chr[i] <- test_beta_coordinate[test_beta_coordinate$transcript_ID == link[i,1],1]
+  link$start[i] <- test_beta_coordinate[test_beta_coordinate$transcript_ID == link[i,1],2]
+  link$end[i] <- test_beta_coordinate[test_beta_coordinate$transcript_ID == link[i,1],3]
+  link$CHR[i] <- test_beta_coordinate[test_beta_coordinate$transcript_ID == link[i,2], 1]
+  link$Start[i] <- test_beta_coordinate[test_beta_coordinate$transcript_ID == link[i,2],2]
+  link$End[i] <- test_beta_coordinate[test_beta_coordinate$transcript_ID == link[i,2],3]
 }
 link
 link <- link[,c(-1,-2)]
