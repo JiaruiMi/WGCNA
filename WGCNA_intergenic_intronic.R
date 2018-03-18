@@ -576,7 +576,7 @@ head(datExpr1)[21]; head(datExpr1[22]); colnames(datExpr1)
 ### Use loess model to fit the curve in order to select the highly variable genes
 #### Plotting the regression line and label the highly variable genes based on certain threshold (though subjective)
 p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
-  geom_smooth(span = 1, method = 'loess', na.rm = T) + 
+  geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
   geom_smooth(method = lm, col = 'red', na.rm = T) + 
   ylim(c(0.4,2.6)) +
   geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
@@ -603,7 +603,7 @@ summary(model_xlog2mean_ylog2CV)
 prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
 head(prediction$fit)  ## get the y value (log2_CV) point prediction
 #### Further filtering according to the predicted y value point prediction
-datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 0.2,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
+datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 1,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
 
 filtered_TPM_normalized_counts <- datExpr0
 head(filtered_TPM_normalized_counts)
@@ -672,7 +672,7 @@ geneTree <- hclust(as.dist(dissTOM), method = 'average')   # This step takes som
 par(mfrow = c(1,1))
 plot(geneTree, xlab = '', sub = '', main = 'Gene clustering on TOM-based dissimilarity', labels = F, hang = 0.04)
 # We like large modules, so we set the minimum module size relatively high
-minModuleSize <- 50
+minModuleSize <- 15
 # set cutHeight, otherwise the function will set a cutHeight automatically
 # The next step may take some time
 dynamicMods <- cutreeDynamic(dendro = geneTree, distM = dissTOM, deepSplit = 2, pamRespectsDendro = F, minClusterSize = minModuleSize)
@@ -689,7 +689,7 @@ MEDiss <- 1-cor(MEs)
 METree <- hclust(as.dist(MEDiss), method = 'average')
 par(mfrow = c(1,1))
 plot(METree, main = 'Clustering of module eigengene', xlab = '', sub = '')
-MEDissThres = 0.6 # set the threshold to make some branches together
+MEDissThres = 0.3 # set the threshold to make some branches together
 abline(h = MEDissThres, col = 'red')
 Merge <- mergeCloseModules(t(datExpr0), dynamicColors, cutHeight = MEDissThres, verbose = 3)
 mergedColors <- Merge$colors
@@ -810,7 +810,7 @@ modProbes_black
 # 也可以指定感兴趣的模块进行分析，每一个module都分配了一个color
 # 比如对module = ‘blue’ 的模块进行分析
 # 'blue' module gene
-module <- c('blue')
+module <- c('black')
 column <- match(module, modNames)
 moduleGenes <- moduleColors == module
 head(moduleGenes)
@@ -822,7 +822,7 @@ length(rownames(filtered_TPM_normalized_counts)[test_module_index])
 # 都是基因名，相当于后面的probes
 test_module_transcriptName <- rownames(filtered_TPM_normalized_counts)[test_module_index]
 length(test_module_transcriptName); test_module_transcriptName
-# test module 有12个基因
+# test module 有38个基因
 head(datExpr1)
 p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
   geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
@@ -947,7 +947,7 @@ lincRNA_delta <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMeans(lincRNA_co
 ### Pick up the transcripts information of beta gene-module, the transcripts names are stored in 'blue_module_transcriptName' object
 test_beta_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% as.vector(test_module_transcriptName),]
 test_beta_coordinate;dim(test_beta_coordinate)
-test_beta_coordinate <- test_beta_coordinate[1:232,]  # 'black' 1-27, 'brown' 1-30
+test_beta_coordinate <- test_beta_coordinate[1:27,]  # 'black' 1-27, 'brown' 1-30
 #### Here we see that there are several transcripts that are not matched to the autosomal chromosome, but now we don't filter them
 
 ### Next, we add the expression information, the TPM expression matrix is stored in 'data1' object
@@ -1096,9 +1096,8 @@ RCircos.Chromosome.Ideogram.Plot()  ## 画染色体的最外圈
 
 ### Gene labels
 library(dplyr)
-RCircos.Gene.Label.Data <- read.csv('beta_lincRNA.csv', header = T)
-RCircos.Gene.Label.Data <- sample_n(tbl = RCircos.Gene.Label.Data, size = 100, replace = F)
-table(RCircos.Gene.Label.Data$Chr)
+RCircos.Gene.Label.Data <- promoter_bedtools[1:27,]
+table(RCircos.Gene.Label.Data$chr)
 str(RCircos.Gene.Label.Data)
 name.col <- 4
 side <- 'in'
@@ -1138,6 +1137,13 @@ RCircos.Line.Plot(line.data = RCircos.Line.Data, data.col = data.col,
                   track.num = track.num, is.sorted = F)
 
 
+### Line
+RCircos.Line.Data <- lincRNA_acinal
+data.col <- 5
+track.num <- 8
+side <- 'in'
+RCircos.Line.Plot(line.data = RCircos.Line.Data, data.col = data.col,
+                  track.num = track.num, is.sorted = F)
 
 
 ### Histogram
