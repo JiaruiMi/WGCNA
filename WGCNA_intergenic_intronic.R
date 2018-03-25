@@ -434,7 +434,7 @@ library(ggrepel)
 ## To prepare for the dataframe, first you need to know the max number of exons for the transcripts
 num_exons_2plus <- read.csv('number_exons_2plus.csv', header = F)
 dim(num_exons_2plus); max(num_exons_2plus) # number of transcripts with exons >= 2 is 5600; the maximum number of exons is 35
-ggplot(data = num_exons_2plus, aes(x = V1)) + geom_histogram(bins = 35)
+ggplot(data = num_exons_2plus, aes(x = V1)) + geom_histogram(bins = 35) + theme_classic() 
 summary(num_exons_2plus) 
 ### the mean exon numbers for new intergenic/intronic transcripts with >= 2 exons is 3.337, the median is 2
 
@@ -457,7 +457,8 @@ summary(num_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]) 
 #==============================================================================
 
 num_exons_inter_intro <- read.csv('number_exons_assembly_intergenic_intronic.csv', header = F)
-ggplot(data = num_exons_inter_intro, aes(x = V1)) + geom_histogram(bins = 35)
+head(num_exons_inter_intro)
+ggplot(data = num_exons_inter_intro, aes(x = V1)) + geom_histogram(bins = 35)+ theme_classic()
 summary(num_exons_inter_intro); dim(num_exons_inter_intro)
 ### the mean exon numbers for intergenic/intronic transcripts is 1.809, the median is 1
 ### the total number of intergenic/intronic transcript is 16176
@@ -810,7 +811,7 @@ modProbes_black
 # 也可以指定感兴趣的模块进行分析，每一个module都分配了一个color
 # 比如对module = ‘blue’ 的模块进行分析
 # 'blue' module gene
-module <- c('black')
+module <- c('blue')
 column <- match(module, modNames)
 moduleGenes <- moduleColors == module
 head(moduleGenes)
@@ -938,16 +939,25 @@ lincRNA_coordinate_expr <- lincRNA_coordinate_expr[,c(25,2:24)]
 ### 'coordinate_total_transcript' object contains all the coordinate for 98000+ transcripts
 ### 'lincRNA_coordinate_expr' object is the coordinate and expression matrix of 4764 transcripts with exon >= 2, length > 200
 ### and with known chromosome names (without KN...)
-lincRNA_acinal <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMeans(lincRNA_coordinate_expr[,c(5,20:24)]))
-lincRNA_beta <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMeans(lincRNA_coordinate_expr[,6:10]))
-lincRNA_alpha <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMeans(lincRNA_coordinate_expr[,11:15]))
-lincRNA_delta <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMeans(lincRNA_coordinate_expr[,16:19]))
+library(matrixStats)
+lincRNA_acinal <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMedians(as.matrix(lincRNA_coordinate_expr[,c(5,20:24)])))
+lincRNA_beta <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMedians(as.matrix(lincRNA_coordinate_expr[,6:10])))
+lincRNA_alpha <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMedians(lincRNA_coordinate_expr[,11:15]))
+lincRNA_delta <- cbind(lincRNA_coordinate_expr[,1:4], expr = rowMedians(lincRNA_coordinate_expr[,16:19]))
+lincRNA_beta[order(lincRNA_beta$expr, decreasing = T),]
 
 
 ### Pick up the transcripts information of beta gene-module, the transcripts names are stored in 'blue_module_transcriptName' object
 test_beta_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% as.vector(test_module_transcriptName),]
 test_beta_coordinate;dim(test_beta_coordinate)
-test_beta_coordinate <- test_beta_coordinate[1:27,]  # 'black' 1-27, 'brown' 1-30
+sum(test_beta_coordinate$chr %in% 1:25)
+test_beta_coordinate <- test_beta_coordinate[1:148,]  # 'black' 1-27, 'brown' 1-30, 'yellow' 1-28, 'blue' 148
+setwd('/Users/mijiarui/biosoft/HOMER/results')
+write.table(x = test_beta_coordinate, file = 'black_coordinate.txt', quote = F, row.names = F)
+write.table(x = test_beta_coordinate, file = 'brown_coordinate.txt', quote = F, row.names = F)
+write.table(x = test_beta_coordinate, file = 'yellow_coordinate.txt', quote = F, row.names = F)
+write.table(x = test_beta_coordinate, file = 'blue_coordinate.txt', quote = F, row.names = F)
+getwd()
 #### Here we see that there are several transcripts that are not matched to the autosomal chromosome, but now we don't filter them
 
 ### Next, we add the expression information, the TPM expression matrix is stored in 'data1' object
@@ -960,15 +970,39 @@ test_beta_expr
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
 library('dplyr')
-promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -1000, End = start)[, c(1,5,6,4)]
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -750, End = start + 250)[, c(1,5,6,4)]
 promoter_left_strand
-promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end, End = end + 1000)[,c(1,5,6,4)]
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end - 250, End = end + 750)[,c(1,5,6,4)]
 promoter_right_strand
+
+######
+# +/-
+promoter_left_strand$strand <- rep('+', times = nrow(promoter_left_strand))
+promoter_right_strand$strand <- rep('-', times = nrow(promoter_right_strand))
+promoter <- rbind(promoter_left_strand, promoter_right_strand)
+######
+
+######
+####### ++/--
+####### 对正负链上5’和3’区域的序列进行标注
+####### Positive labelled, 5' region
 promoter_positiveLabel <- rbind(promoter_left_strand, promoter_right_strand)
 promoter_positiveLabel$strand <- rep('+', times = nrow(promoter_positiveLabel))
+promoter_positiveLabel$transcript_ID[1:nrow(promoter_left_strand)]<- paste0(promoter_left_strand$transcript_ID,'-1')
+promoter_positiveLabel$transcript_ID[(nrow(promoter_left_strand)+1):nrow(promoter_positiveLabel)] <- paste0(promoter_left_strand$transcript_ID,'-2')
+
+###### Negative labelled, 3' region
 promoter_negativeLabel <- rbind(promoter_left_strand, promoter_right_strand)
 promoter_negativeLabel$strand <- rep('-', times = nrow(promoter_negativeLabel))
+promoter_negativeLabel$transcript_ID[1:nrow(promoter_left_strand)]<- paste0(promoter_left_strand$transcript_ID,'-3')
+promoter_negativeLabel$transcript_ID[(nrow(promoter_left_strand)+1):nrow(promoter_negativeLabel)] <- paste0(promoter_left_strand$transcript_ID,'-4')
+
+###### Merge 5' region and 3' region
 promoter <- rbind(promoter_positiveLabel, promoter_negativeLabel)
+######
+
+
+promoter
 for (i in 1:nrow(promoter)){## here we found that the 'chr' does not have 'chr' label, we need to add it
   promoter$Chr[i] <- paste0('chr',promoter$chr[i])
 }
@@ -977,9 +1011,9 @@ head(promoter); dim(promoter)
 promoter
 promoter_bedtools <- promoter[,c(2:4,1,5)]
 promoter_bedtools
-write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter_blue.txt', 
+write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter_blue.txt', 
             sep = '\t', row.names = F, col.names = F, quote = F)
-write.table(x = promoter_bedtools, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter_bed_blue.txt',
+write.table(x = promoter_bedtools, file = '/Users/mijiarui/biosoft/HOMER/demo/promoter_bed_black.txt',
             sep = '\t', row.names = F, col.names = F, quote = F)
 
 ### Write the table into txt form and the files would be used as input for HOMER
