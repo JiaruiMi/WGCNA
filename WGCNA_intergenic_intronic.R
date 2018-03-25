@@ -446,6 +446,13 @@ head(length_exons_2plus); dim(length_exons_2plus)
 table(rowSums(length_exons_2plus, na.rm = T) < 200)
 which(rowSums(length_exons_2plus, na.rm = T) < 200)
 #### In transcripts with exons >= 2 (5600), transcripts with length < 200 = 7, >= 200 is 5593
+#### Select the transcriptes with exons >= 2 and length >200 (TU_id and exon_number information)
+num_exons_2plus_200ntPlus <- num_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]
+num_exons_2plus_200ntPlus <- as.data.frame(num_exons_2plus_200ntPlus)
+num_exons_2plus_200ntPlus$type <- 'intergenic_intronic'
+colnames(num_exons_2plus_200ntPlus)[1] <- 'exon_num'
+num_exons_2plus_200ntPlus <- num_exons_2plus_200ntPlus[,c(2,1)]
+
 
 ### Check the length (mean, median, min and max) of the transcripts with exon >=2 and length >200nt
 summary(rowSums(length_exons_2plus[rowSums(length_exons_2plus, na.rm = T) >= 200,], na.rm = T)) # length summary
@@ -473,10 +480,31 @@ index_length_lessThan_200
 summary(rowSums(length_exons_assembly_intergenic_intronic[rowSums(length_exons_assembly_intergenic_intronic, na.rm = T) >= 200,], na.rm = T)) # length summary
 summary(num_exons_inter_intro [which(rowSums(length_exons_assembly_intergenic_intronic, na.rm = T) >= 200),]) # exon number summary
 
+#==============================================================================
+#              Known transcripts and their exon numbers
+#==============================================================================
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lincRNA')
+known_transcript_exon_num <- read.table('protein_coding_exon.txt', sep = ' ', header = F, quote = "")
+colnames(known_transcript_exon_num) <- c('ID', 'exon_num')
+known_transcript_exon_num$type <- 'protein_coding'
+known_transcript_exon_num <- known_transcript_exon_num[,c(3,2)]
+head(known_transcript_exon_num)
+
+########## Comparison of exon numbers of lncRNA(intergenic and intronic region) and protein_coding gene ###########
+### First, check protein coding transcripts
+ggplot(data = known_transcript_exon_num, aes(x = exon_num)) + geom_histogram(bins = 35)+ theme_classic() + xlim(0,35)
+ggplot(data = known_transcript_exon_num, aes(x = exon_num)) + geom_density(bins = 35)+ theme_classic() + xlim(0,35)
+### Second, check lncRNA (intergenic and intronic regions)
+ggplot(data = num_exons_2plus_200ntPlus, aes(x = exon_num)) + geom_histogram(bins = 35)+ theme_classic()
+ggplot(data = num_exons_2plus_200ntPlus, aes(x = exon_num)) + geom_density()+ theme_classic()+ xlim(0,20)
+### Third, let's merge the data together and check again
+known_plus_intergenic_intronic <- rbind(num_exons_2plus_200ntPlus, known_transcript_exon_num)
+ggplot(data = known_plus_intergenic_intronic, aes(x = exon_num, fill = type, colour = type)) + geom_histogram(position = 'identity', alpha = 0.1)+ theme_bw()+ xlim(1,35)
 
 
 #=====================================================================================
 #    Clean your expression matrix with transcripts with exon >= 2 and length > 200nt
+#                           WGCNA input data preparation
 #=====================================================================================
 ## set working directory
 setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
