@@ -500,9 +500,10 @@ ggplot(data = num_exons_2plus_200ntPlus, aes(x = exon_num)) + geom_density()+ th
 ### Third, let's merge the data together and check again
 known_plus_intergenic_intronic <- rbind(num_exons_2plus_200ntPlus, known_transcript_exon_num)
 ggplot(data = known_plus_intergenic_intronic, aes(x = exon_num, fill = type, colour = type)) + 
-  geom_histogram(position = 'stack', alpha = 0.8,  binwidth = 1)+ theme_classic()+ xlim(1,35)
+  geom_histogram(position = 'stack', alpha = 0.8,  binwidth = 1)  + scale_fill_brewer(palette = "Set1") +
+  theme_classic()+ xlim(1,35) 
 
-
+?scale_color_brewer
 #=====================================================================================
 #    Clean your expression matrix with transcripts with exon >= 2 and length > 200nt
 #                           WGCNA input data preparation
