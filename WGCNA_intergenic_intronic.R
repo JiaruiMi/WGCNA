@@ -1217,3 +1217,48 @@ track.num <- 7
 side <- 'in'
 RCircos.Histogram.Plot(hist.data = RCircos.Histogram.Data, data.col = data.col, track.num = track.num, side = side)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#======================================================================================
+#
+#                            WGCNA for total transcripts
+#
+#======================================================================================
+library(WGCNA)
+options(stringsAsFactors = F)
+
+## set working directory
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
+
+
+##################### Read in data (SampleGroup) ########################
+## Load in sample data
+sample <- read.csv('SampleGroup.csv', header = T, row.names = 1, colClasses = 'factor')
+
+##################### Read in data (TPM) and data visualization ########################
+## Load in count table based on TPM normalization (of all the 98528 transcripts)
+transcripts <- read.table('merge_tpm.txt', header = T, row.names = 1)
+
+
