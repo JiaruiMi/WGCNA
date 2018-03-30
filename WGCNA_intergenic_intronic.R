@@ -610,6 +610,7 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
   geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
   geom_smooth(method = lm, col = 'red', na.rm = T) + 
   ylim(c(0.4,2.6)) +
+  geom_vline(xintercept = 1, col = 'darkgreen', lty = 2, lwd = 1) +
   theme_classic() +
   labs(x = 'Log2_mean', y = 'Log2_CV');p
 
@@ -639,9 +640,10 @@ model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0
 summary(model_xlog2mean_ylog2CV)
 #### Use prediction to predict the y value (log2_CV) for each x (log2_mean)
 prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
+str(prediction)
 head(prediction$fit)  ## get the y value (log2_CV) point prediction
 #### Further filtering according to the predicted y value point prediction
-datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 1,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
+datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit  & datExpr1$log2_mean > 1,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
 head(datExpr0)
 
 filtered_TPM_normalized_counts <- datExpr0
@@ -659,7 +661,16 @@ head(pearson_cor)
 hc <- hcluster(t(datExpr0), method="pearson")
 hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
 heatmap.2(pearson_cor, Rowv = as.dendrogram(hc), trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
-pheatmap(pearson_cor)
+pheatmap(pearson_cor, cutree_rows = 4, cutree_cols = 4, annotation_col = sample)
+
+#### Principal Component analysis (PCA) ######
+### Using 'ggbiplot' package
+library(ggbiplot)
+pca <- prcomp(t(datExpr0), scale. = T)   # remember to transpose the matrix
+plot(pca$x[,1],pca$x[,2])
+ggbiplot(pca ,choices = 1:2, obs.scale = T,labels = NULL, var.scale = T,groups = sample$celltype, ellipse = T, circle = T, var.axes = F, alpha = 0.5) + 
+  theme(legend.direction = 'horizontal', legend.position = 'top')+theme_classic() 
+
 
 ###### Sample Cluster (样本聚类) ######
 ## For sample clustering, we should used transformed count matrix. 
@@ -682,7 +693,7 @@ save(traitData, file = 'trait_forAnalysis.RData')
 ################ STEP 2: Network Construction #############
 ######## Select the best soft-thresholding power #########
 ## Choose a set of soft-thresholding powers
-powers <- c(1:30)
+powers <- seq(1,30,2)
 ## Call the Network Topological Analysis function
 sft <- pickSoftThreshold(t(datExpr0), powerVector = powers, verbose = 5)  # This step takes some time.
 par(mfrow = c(1,2), mar = c(6.5,8,3,3))
@@ -728,7 +739,7 @@ MEDiss <- 1-cor(MEs)
 METree <- hclust(as.dist(MEDiss), method = 'average')
 par(mfrow = c(1,1))
 plot(METree, main = 'Clustering of module eigengene', xlab = '', sub = '')
-MEDissThres = 0.3 # set the threshold to make some branches together
+MEDissThres = 0.25 # set the threshold to make some branches together
 abline(h = MEDissThres, col = 'red')
 Merge <- mergeCloseModules(t(datExpr0), dynamicColors, cutHeight = MEDissThres, verbose = 3)
 mergedColors <- Merge$colors
@@ -771,7 +782,7 @@ labeledHeatmap(Matrix = moduleTraitCor,
                colors = blueWhiteRed(50),
                textMatrix = textMatrix,
                setStdMargins = F,
-               cex.text = 0.5,
+               cex.text = 1,
                zlim <- c(-1,1),
                main = paste('Module-trait relationships'))
 
