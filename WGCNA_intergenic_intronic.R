@@ -102,11 +102,12 @@ p
 p <- ggplot(exprSet_L, aes(value, fill = group))+geom_histogram(bins = 200)+facet_wrap(~variable, nrow = 4)
 p
 #### density plot
-p <- ggplot(exprSet_L, aes(value, fill = group, col = group))+geom_density()+facet_wrap(~variable, nrow = 4)
+p <- ggplot(exprSet_L, aes(value, fill = group, col = group))+geom_density()+
+  facet_wrap(~variable, nrow = 4) + labs(x = 'Log_normalized_NumReads', y = 'Density') +
+  theme_classic()
 p
 p <- ggplot(exprSet_L, aes(value, col = group))+geom_density()
 p
-
 
 
 #==============================================================================================
@@ -501,9 +502,8 @@ ggplot(data = num_exons_2plus_200ntPlus, aes(x = exon_num)) + geom_density()+ th
 known_plus_intergenic_intronic <- rbind(num_exons_2plus_200ntPlus, known_transcript_exon_num)
 ggplot(data = known_plus_intergenic_intronic, aes(x = exon_num, fill = type, colour = type)) + 
   geom_histogram(position = 'stack', alpha = 0.8,  binwidth = 1)  + scale_fill_brewer(palette = "Set1") +
-  theme_classic()+ xlim(1,35) 
+  theme_classic()+ xlim(0,35) + labs(x = 'Exon number', y = 'counts')
 
-?scale_color_brewer
 #=====================================================================================
 #    Clean your expression matrix with transcripts with exon >= 2 and length > 200nt
 #                           WGCNA input data preparation
@@ -610,7 +610,14 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
   geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
   geom_smooth(method = lm, col = 'red', na.rm = T) + 
   ylim(c(0.4,2.6)) +
-  geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
+  theme_classic() +
+  labs(x = 'Log2_mean', y = 'Log2_CV');p
+
+p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
+  geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
+  geom_smooth(method = lm, col = 'red', na.rm = T) + 
+  ylim(c(0.4,2.6)) +
+  geom_vline(xintercept = seq(1,2,1), col = 'darkgreen', lty = 2) +
   theme_classic() +
   geom_text_repel(data=subset(datExpr1, datExpr1$log2_mean > 2 & datExpr1$log2_CV> 1.25), 
                   aes(label=row.names(datExpr1[datExpr1$log2_mean > 2 & datExpr1$log2_CV> 1.25,])), 
@@ -635,6 +642,7 @@ prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2
 head(prediction$fit)  ## get the y value (log2_CV) point prediction
 #### Further filtering according to the predicted y value point prediction
 datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit & datExpr1$log2_mean > 1,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
+head(datExpr0)
 
 filtered_TPM_normalized_counts <- datExpr0
 head(filtered_TPM_normalized_counts)
@@ -1247,6 +1255,7 @@ RCircos.Histogram.Plot(hist.data = RCircos.Histogram.Data, data.col = data.col, 
 #
 #======================================================================================
 library(WGCNA)
+library(ggplot2)
 options(stringsAsFactors = F)
 
 ## set working directory
@@ -1260,5 +1269,854 @@ sample <- read.csv('SampleGroup.csv', header = T, row.names = 1, colClasses = 'f
 ##################### Read in data (TPM) and data visualization ########################
 ## Load in count table based on TPM normalization (of all the 98528 transcripts)
 transcripts <- read.table('merge_tpm.txt', header = T, row.names = 1)
+data1 <- transcripts
+dim(data1); head(data1)
+datExpr0 <- as.data.frame(t(data1)); dim(datExpr0)
+
+
+
+####### check missing value and filter #########
+## check missing value ##
+gsg <- goodSamplesGenes(datExpr0, verbose = 3)
+gsg$allOK
+
+if (!gsg$allOK)
+{
+  # Optionally, print the gene and sample names that were removed:
+  if (sum(!gsg$goodGenes)>0)
+    printFlush(paste("Removing genes:", paste(names(datExpr0)[!gsg$goodGenes], collapse = ',')))
+  if (sum(!gsg$goodSamples)>0)
+    printFlush(paste("Remove samples:", paste(rownames(datExpr0)[!gsg$goodSamples], collapse = ',')))
+  # Remove the offending genes and samples from the data:
+  datExpr0 = datExpr0[gsg$goodSamples, gsg$goodGenes]
+}
+
+
+n <- nrow(datExpr0); n
+datExpr0[n+1,] <- apply(datExpr0[c(1:n),],2, function(x){log2(mean(x)+1)}); dim(datExpr0)
+datExpr0[n+2,] <- apply(datExpr0[c(1:n),], 2, function(x){log2(sd(x)/mean(x)+1)}) ; dim(datExpr0)# 使用变异系数（coefficient of variance, CV)较正表达量高低对变异度的影响
+datExpr1 <- as.data.frame(t(datExpr0))
+names(datExpr1)[21] <- 'log2_mean';names(datExpr1)[22] <- 'log2_CV'; names(datExpr1)
+head(datExpr1)[21]; head(datExpr1[22]); colnames(datExpr1)
+
+### Use loess model to fit the curve in order to select the highly variable genes
+#### Plotting the regression line and label the highly variable genes based on certain threshold (though subjective)
+p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
+  geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
+  geom_smooth(method = lm, col = 'red', na.rm = T) + 
+  ylim(c(0.4,2.6)) +
+  geom_vline(xintercept = seq(0,2,0.2), col = 'darkgreen', lty = 2) +
+  theme_classic(); p
+
+#### Use loess regression to fit the model
+##### First, let's try loess model, too calculation intensive and the software always shut down
+##### model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0.2, method = 'loess')
+
+##### Next, let's try linear model
+model_xlog2mean_ylog2CV_lm <- lm(datExpr1$log2_CV ~ datExpr1$log2_mean)
+summary(model_xlog2mean_ylog2CV)
+#### Use prediction to predict the y value (log2_CV) for each x (log2_mean)
+prediction <- predict(object = model_xlog2mean_ylog2CV_lm, data.frame(datExpr1$log2_mean), se = T)
+summary(prediction)
+head(prediction$fit)  ## get the y value (log2_CV) point prediction
+#### Further filtering according to the predicted y value point prediction
+datExpr0 <- datExpr1[datExpr1$log2_CV > (prediction$fit + 1.3*prediction$se.fit) & datExpr1$log2_mean > 0.5,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
+
+filtered_TPM_normalized_counts <- datExpr0
+head(filtered_TPM_normalized_counts)
+dim(filtered_TPM_normalized_counts)
+
+
+
+### After selection of HVG using loess, let's have a look at the clustering and see whether the filtering highly variable genes are good enough to distinguish 
+### different samples (supervised learning)
+library('gplots')
+library('pheatmap')
+library('amap')
+library('RColorBrewer')
+pearson_cor <- as.matrix(cor(datExpr0, method = 'pearson'))
+head(pearson_cor)
+hc <- hcluster(t(datExpr0), method="pearson")
+hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+heatmap.2(pearson_cor, Rowv = as.dendrogram(hc), trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
+pheatmap(pearson_cor)
+
+
+
+###### Sample Cluster (样本聚类) ######
+## For sample clustering, we should used transformed count matrix. 
+## datExpr0 has been transposed in the steps before, therefore rows are samples, columns are genes
+## We use this transposed count matrix as input to do sample clustering
+sampleTree <- hclust(dist(t(datExpr0)), method = 'average')
+par(mfrow = c(1,1))
+plot(sampleTree, main = "Sample clustering to detect outlier")
+
+###### load trait data ######
+traitData <- read.csv(file = 'trait_D.csv', header = T, row.names = 1, check.names = F)
+head(traitData)
+## convert traits to a color representation: white means low, red means high, grey means missing entry
+traitColors <- numbers2colors(traitData, signed = F); traitColors;names(traitData)
+plotDendroAndColors(sampleTree, traitColors, groupLabels = names(traitData), 
+                    main = 'Sample dendrogram and trait heatmap')
+
+
+################ STEP 2: Network Construction #############
+######## Select the best soft-thresholding power #########
+## Choose a set of soft-thresholding powers
+powers <- c(1:30)
+## Call the Network Topological Analysis function
+sft <- pickSoftThreshold(t(datExpr0), powerVector = powers, verbose = 5)  # This step takes some time.
+par(mfrow = c(1,2), mar = c(6.5,8,3,3))
+cex1 = 0.9
+str(sft)  
+# The output of 'sft' is a list object. powerEstimate is the estimated best power
+# The second output of 'sft' is fitIndices, which is a matrix. The fifth column, 'mean.k' denote average connectivity.
+
+## Scale-free topological fit index as a function of the soft-thresholding power
+plot(sft$fitIndices[,1], -sign(sft$fitIndices[,3]*sft$fitIndices[,2]), xlab = 'Soft Threshold (power)', 
+     ylab = 'Scale free Topological Model Fit, signed R^2', type = 'n', main = paste('Scale independence'))
+text(sft$fitIndices[,1], -sign(sft$fitIndices[,3]*sft$fitIndices[,2]), labels = powers, cex = cex1, col = 'red')
+abline(h = 0.9, col = 'blue') 
+# The blue line corresponds to using a R^2 cut-off of h
+plot(sft$fitIndices[,1], sft$fitIndices[,5], xlab = 'Soft Threshold (power)', ylab = 'Mean Connectivity', type = 'n', main = paste('Mean Connectivity'))
+text(sft$fitIndices[,1], sft$fitIndices[,5],labels = powers, cex = cex1, col = 'red')
+## Choose the softPower
+softPower <- sft$powerEstimate
+softPower
+Adjacency <- adjacency(t(datExpr0), power = 6)
+## Turn adjacency matrix into Topological matrix, this step takes some time ##
+TOM <- TOMsimilarity(Adjacency)  
+dissTOM <- 1-TOM
+## Call the hierarchincal clustering function
+geneTree <- hclust(as.dist(dissTOM), method = 'average')   # This step takes some time, to calculate the distance in gene pairs.
+par(mfrow = c(1,1))
+plot(geneTree, xlab = '', sub = '', main = 'Gene clustering on TOM-based dissimilarity', labels = F, hang = 0.04)
+# We like large modules, so we set the minimum module size relatively high
+minModuleSize <- 150
+# set cutHeight, otherwise the function will set a cutHeight automatically
+# The next step may take some time
+dynamicMods <- cutreeDynamic(dendro = geneTree, distM = dissTOM, deepSplit = 2, pamRespectsDendro = F, minClusterSize = minModuleSize)
+table(dynamicMods)
+## Convert numeric labels into colors
+dynamicColors <- labels2colors(dynamicMods)
+table(dynamicColors)
+plotDendroAndColors(geneTree, dynamicColors,'Dynamic Tree Cut', dendroLabels = F, 
+                    hang = 0.03, addGuide = T, guideHang = 0.05, main = 'Gene dendrogram and module colors')
+## Calculate eigengene
+MEList <- moduleEigengenes(t(datExpr0), dynamicColors)
+MEs <- MEList$eigengenes
+MEDiss <- 1-cor(MEs)
+METree <- hclust(as.dist(MEDiss), method = 'average')
+par(mfrow = c(1,1))
+plot(METree, main = 'Clustering of module eigengene', xlab = '', sub = '')
+MEDissThres = 0.25 # set the threshold to make some branches together
+abline(h = MEDissThres, col = 'red')
+Merge <- mergeCloseModules(t(datExpr0), dynamicColors, cutHeight = MEDissThres, verbose = 3)
+mergedColors <- Merge$colors
+table(mergedColors)
+mergedMEs <- Merge$newMEs
+plotDendroAndColors(geneTree, cbind(dynamicColors, mergedColors), c('Dynamic Tree Cut', 'Merged dynamic'), 
+                    dendroLabels = F, hang = 0.03, addGuide = T, guideHang = 0.05) # It takes time!!!
+## Rename to module Colors
+moduleColors <- mergedColors
+colorOrder <- c('grey', standardColors(50))
+moduleLabels <- match(moduleColors, colorOrder)-1
+moduleLabels
+MEs <- mergedMEs
+
+
+
+
+######################### Relate modules to external clinical traits ########################
+nGene <- ncol(t(datExpr0))
+nSample <- nrow(t(datExpr0))
+moduleTraitCor <- cor(MEs, traitData, use = 'p')
+moduleTraitPvalue <- corPvalueStudent(moduleTraitCor, nSample)
+textMatrix = paste(signif(moduleTraitCor,2),"\n(", signif(moduleTraitPvalue,1),")", sep = "")
+dim(textMatrix) <- dim(moduleTraitCor)
+par(mfrow = c(1,1))
+par(mar = c(6,8.5,3,3))
+labeledHeatmap(Matrix = moduleTraitCor,
+               xLabels = names(traitData),
+               yLabels = names(MEs),
+               ySymbols = names(MEs),
+               colorLabels = F,
+               colors = blueWhiteRed(50),
+               textMatrix = textMatrix,
+               setStdMargins = F,
+               cex.text = 0.5,
+               zlim <- c(-1,1),
+               main = paste('Module-trait relationships'))
+
+
+##################### Visualizing the gene network #######################
+nSelect <- 400
+set.seed(10)
+select <- sample(nGene, size = nSelect)
+selectTOM <- dissTOM[select, select]
+selectTree <- hclust(as.dist(selectTOM), method = 'average')
+selectColors <- moduleColors[select]
+plotDiss <- selectTOM^8
+diag(plotDiss) <- NA
+TOMplot(plotDiss, selectTree, selectColors, main = 'Network heatmap plot, select genes')
+
+###################### Visualizing the gene network of eigengene ###################
+par(cex = 0.9)
+plotEigengeneNetworks(MEs, "", marDendro = c(0,4,1,2), marHeatmap = c(3,4,1,2), cex.lab = 0.8)
+
+
+
+
+##################### Module membership (MM) and Gene significance ######################
+# Gene Significance, GS: 基因显著性参数，为非负数字信息，比如基于样本的临床信息(clinical traits)和基于每个基因的-log(p-value)等
+# names (colors) of each module
+modNames <- substring(names(MEs),3)
+modNames
+# 首先计算模块与基因的相关性矩阵
+# MEs表示每个模块在样本里的值
+geneModuleMembership <- as.data.frame(cor(t(datExpr0), MEs, use = 'p'))
+MMPvalue = as.data.frame(corPvalueStudent(as.matrix(geneModuleMembership),nSample))
+head(MMPvalue)
+names(MMPvalue) <- paste("p.MM", modNames, sep = "")
+# names of those traits
+traitNames <- names(traitData)
+geneTraitSignificance <- as.data.frame(cor(t(datExpr0), traitData, use = 'p'))
+head(geneTraitSignificance)
+GSPvalue <- as.data.frame(corPvalueStudent(as.matrix(geneTraitSignificance), nSample))
+head(GSPvalue)
+names(geneTraitSignificance) <- paste('GS.',traitNames,sep = "")
+names(GSPvalue) <- paste("p.GS.", traitNames, sep = "")
+
+#=======================================================================================
+#                        Load in potential lincRNA geneList
+#=======================================================================================
+
+
+##################### Read in data (TPM) and data visualization ########################
+## Load in count table based on TPM normalization (of all the 98528 transcripts)
+intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt')
+intergenic_intronic <- as.vector(as.matrix(intergenic_intronic))
+
+## Choose the one in the intergenic and intronic regions
+intergenic_intronic_transcript <- transcripts[row.names(transcripts) %in% intergenic_intronic,]
+dim(intergenic_intronic_transcript)
+
+## Get rid of those with length less than 200
+intergenic_intronic_transcript_moreThan_200 <- intergenic_intronic_transcript[-index_length_lessThan_200,]
+head(intergenic_intronic_transcript_moreThan_200)
+
+## Get rid of those with exons less than 2
+exon_1 <- read.csv('exon_1_intergenic_intronic.csv', header = F)
+intergenic_intronic_exon_highThan1_length_highThan_200 <- intergenic_intronic_transcript_moreThan_200[!row.names(intergenic_intronic_transcript_moreThan_200)  
+                                                                                                      %in% exon_1$V1,]
+dim(intergenic_intronic_exon_highThan1_length_highThan_200)
+head(intergenic_intronic_exon_highThan1_length_highThan_200)
+
+
+
+
+
+
+
+
+
+# 也可以指定感兴趣的模块进行分析，每一个module都分配了一个color
+# 比如对module = ‘blue’ 的模块进行分析
+# 'blue' module gene
+module <- c('blue','green','grey60', 'pink')
+column <- match(module, modNames)
+moduleGenes <- moduleColors %in% module
+head(moduleGenes)
+head(moduleColors)
+test_module_index <- which(moduleColors %in% module) # the index of genes which belong to 'blue' module
+length(colnames(datExpr0)[test_module_index])
+length(rownames(filtered_TPM_normalized_counts)[test_module_index])
+# 注意datExpr0和filtered_normalized_counts是转置的关系，所以datExpr0的colnames和filtered_normalized_counts的rownames是一致的
+# 都是基因名，相当于后面的probes
+test_module_transcriptName <- rownames(filtered_TPM_normalized_counts)[test_module_index]
+length(test_module_transcriptName); test_module_transcriptName
+# Calculate the number of transcripts in the modules you are interested which are potential lincRNA
+sum(test_module_transcriptName %in% row.names(intergenic_intronic_exon_highThan1_length_highThan_200))
+# Select these transcritps
+test_module_transcriptName[test_module_transcriptName %in% row.names(intergenic_intronic_exon_highThan1_length_highThan_200)]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#======================================================================================
+#
+#             Differential gene expression for lincRNA (I use NumReads)
+#
+#======================================================================================
+
+## Prepare the expression matrix for lincRNAs
+## set working directory
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
+
+
+##################### Read in data (SampleGroup) ########################
+## Load in sample data
+sample <- read.csv('SampleGroup.csv', header = T, row.names = 1, colClasses = 'factor')
+
+##################### Read in data (TPM) and data visualization ########################
+## Load in count table based on TPM normalization (of all the 98528 transcripts)
+transcripts <- read.table('merge_expr.txt', header = T, row.names = 1)
+intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt')
+intergenic_intronic <- as.vector(as.matrix(intergenic_intronic))
+colnames(transcripts) <- paste("DCD002", c(492:511),"SQ", sep = "")
+head(transcripts); dim(transcripts)
+
+## Choose the one in the intergenic and intronic regions
+intergenic_intronic_transcript <- transcripts[row.names(transcripts) %in% intergenic_intronic,]
+dim(intergenic_intronic_transcript)
+
+## Get rid of those with length less than 200
+intergenic_intronic_transcript_moreThan_200 <- intergenic_intronic_transcript[-index_length_lessThan_200,]
+head(intergenic_intronic_transcript_moreThan_200)
+
+## Get rid of those with exons less than 2
+exon_1 <- read.csv('exon_1_intergenic_intronic.csv', header = F)
+intergenic_intronic_exon_highThan1_length_highThan_200 <- intergenic_intronic_transcript_moreThan_200[!row.names(intergenic_intronic_transcript_moreThan_200)  
+                                                                                                      %in% exon_1$V1,]
+dim(intergenic_intronic_exon_highThan1_length_highThan_200)
+head(intergenic_intronic_exon_highThan1_length_highThan_200)
+
+
+############### Make DESeq object #############
+library(DESeq2)
+ddsFullCountTable <- DESeqDataSetFromMatrix(countData = round(intergenic_intronic_exon_highThan1_length_highThan_200), 
+                                            colData = sample, design  = ~ celltype)
+
+## Calculation and Normalization: get normalized_counts
+dds <- DESeq(ddsFullCountTable)
+normalized_counts <- counts(dds, normalized= T)
+
+############# Continue performing normalizaton #################
+## Sort according to mad
+normalized_counts_mad <- apply(normalized_counts, 1, mad)
+normalized_counts < normalized_counts[order(normalized_counts_mad, decreasing = T),]
+## Log transformation
+rld <- rlog(dds, blind = F) # This step takes some time, we do not put '+1' here
+rlogMat <- assay(rld)
+rlogMat <- rlogMat[order(normalized_counts_mad, decreasing = T),]
+
+
+
+
+#======================================================================================
+#             Beta-cell vs alpha-cell and Beta-cell vs delta-cell
+#======================================================================================
+
+################### Perform differential gene expression ################
+############### Differential Gene Expression #################
+sampleA <- 'beta'
+sampleB <- 'acinal'
+sampleC <- 'alpha'
+sampleD <- 'delta'
+
+
+### Differential gene expression between sampleA (beta-cell) and sampleC (alpha-cell)
+#### Comparison between sampleA and sampleC
+contrastV <- c('celltype', sampleA, sampleC)
+res <- results(dds, contrast = contrastV)
+head(res)
+
+
+#### Calculate the mean value of gene expression in sampleA 
+baseA <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleA]
+baseMeanA <- as.data.frame(rowMeans(baseA, na.rm = T))
+colnames(baseMeanA) <- sampleA
+
+
+#### Calculate the mean value of gene expression in sampleC 
+baseC <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleC]
+baseMeanC <- as.data.frame(rowMeans(baseC, na.rm = T))
+colnames(baseMeanC) <- sampleC
+
+#### Prepare the res table of differential gene expression between sampleA and sampleC
+res <- cbind(baseMeanA, baseMeanC, as.data.frame(res))
+ID <- rownames(res)
+res <- cbind(ID, as.data.frame(res))
+res$padj[is.na(res$padj)]<- 1
+res <- res[order(res$padj),]
+res$significance <- (res$padj<0.05)
+
+
+#### Draw MA plot
+plotMA(res[,c(4,5,10)], main = "MAplot")
+
+
+#### Extract differential expressed gene
+res_de <- subset(res, res$padj<0.1, select=c('ID',sampleA,sampleC,'log2FoldChange','padj'))
+res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
+res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
+
+
+#### Volcano plot showing upregulated and downregulated genes
+res$change <- as.factor(ifelse(res$padj < 0.05 & abs(res$log2FoldChange) > 2, 
+                               ifelse(res$log2FoldChange > 1, 'UP', 'DOWN'), 'NOT'))
+
+
+
+##### Plot VolcanoPlot
+library(ggplot2)
+library(ggrepel)
+this_title <- paste('VolcanoPlot of',sampleA, 'vs', sampleC,'\nCutoff for logFC is 1', 
+                    '\nThe number of upregulated genes is', 
+                    nrow(res[res$change == 'UP',]),'\nThe number of downregulated gene is', 
+                    nrow(res[res$change == 'DOWN',]))
+
+
+ggplot(data = res, aes(x=log2FoldChange, y = -log10(padj), color = change, alpha = 0.5)) +
+  geom_point()+
+  scale_color_manual(values = c('blue','black', 'red')) +
+  geom_hline(yintercept = -log10(0.05),lty=4, lwd=0.6,alpha=0.5)+
+  geom_vline(xintercept = c(-1,1),lty=4, lwd=0.6,alpha=0.5)+
+  theme_bw(base_size = 10)+
+  theme(panel.border = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = 'black'))+
+  labs(title= this_title, x= 'log2(fold change)', y = '-log10(padj)')+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+signifiant_genes_beta_vs_alpha <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+
+length(signifiant_genes_beta_vs_alpha)
+
+
+
+
+
+### Differential gene expression between sampleA (beta-cell) and sampleD (delta-cell)
+#### Comparison between sampleA and sampleD
+contrastV <- c('celltype', sampleA, sampleD)
+res <- results(dds, contrast = contrastV)
+head(res)
+
+
+#### Calculate the mean value of gene expression in sampleA 
+baseA <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleA]
+baseMeanA <- as.data.frame(rowMeans(baseA, na.rm = T))
+colnames(baseMeanA) <- sampleA
+
+
+#### Calculate the mean value of gene expression in sampleC 
+baseD <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleD]
+baseMeanD <- as.data.frame(rowMeans(baseD, na.rm = T))
+colnames(baseMeanD) <- sampleD
+
+#### Prepare the res table of differential gene expression between sampleA and sampleC
+res <- cbind(baseMeanA, baseMeanD, as.data.frame(res))
+ID <- rownames(res)
+res <- cbind(ID, as.data.frame(res))
+res$padj[is.na(res$padj)]<- 1
+res <- res[order(res$padj),]
+res$significance <- (res$padj<0.05)
+
+
+#### Draw MA plot
+plotMA(res[,c(4,5,10)], main = "MAplot")
+
+
+#### Extract differential expressed gene
+res_de <- subset(res, res$padj<0.1, select=c('ID',sampleA,sampleC,'log2FoldChange','padj'))
+res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
+res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
+
+
+#### Volcano plot showing upregulated and downregulated genes
+res$change <- as.factor(ifelse(res$padj < 0.05 & abs(res$log2FoldChange) > 2, 
+                               ifelse(res$log2FoldChange > 1, 'UP', 'DOWN'), 'NOT'))
+
+
+
+##### Plot VolcanoPlot
+library(ggplot2)
+library(ggrepel)
+this_title <- paste('VolcanoPlot of',sampleA, 'vs', sampleD,'\nCutoff for logFC is 1', 
+                    '\nThe number of upregulated genes is', 
+                    nrow(res[res$change == 'UP',]),'\nThe number of downregulated gene is', 
+                    nrow(res[res$change == 'DOWN',]))
+
+
+ggplot(data = res, aes(x=log2FoldChange, y = -log10(padj), color = change, alpha = 0.5)) +
+  geom_point()+
+  scale_color_manual(values = c('blue','black', 'red')) +
+  geom_hline(yintercept = -log10(0.05),lty=4, lwd=0.6,alpha=0.5)+
+  geom_vline(xintercept = c(-1,1),lty=4, lwd=0.6,alpha=0.5)+
+  theme_bw(base_size = 10)+
+  theme(panel.border = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = 'black'))+
+  labs(title= this_title, x= 'log2(fold change)', y = '-log10(padj)')+
+  theme(plot.title = element_text(hjust = 0.5))
+
+
+signifiant_genes_beta_vs_delta <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+
+length(signifiant_genes_beta_vs_delta)
+
+
+#### Pick up the lincRNAs that are differentially expressed in between beta-cell and alpha-cell and
+#### between beta-cell and delta-cell
+signifiant_genes_beta_vs_delta[signifiant_genes_beta_vs_delta %in% signifiant_genes_beta_vs_alpha]
+
+################## Pick up the promoter regions ###################
+### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
+### the both ends. It is good to use 'dplyr' package here.
+library('dplyr')
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
+test_beta_coordinate <- read.table('significant_expressed_genes_beta_vs_alphaDelta.txt', header = T, quote = "", sep = '\t', stringsAsFactors = F)
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -750, End = start + 250)[, c(1,5,6,4)]
+promoter_left_strand
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end - 250, End = end + 750)[,c(1,5,6,4)]
+promoter_right_strand
+
+######
+# +/-
+promoter_left_strand$strand <- rep('+', times = nrow(promoter_left_strand))
+promoter_right_strand$strand <- rep('-', times = nrow(promoter_right_strand))
+promoter <- rbind(promoter_left_strand, promoter_right_strand)
+######
+
+######
+####### ++/--
+####### 对正负链上5’和3’区域的序列进行标注
+####### Positive labelled, 5' region
+promoter_positiveLabel <- rbind(promoter_left_strand, promoter_right_strand)
+promoter_positiveLabel$strand <- rep('+', times = nrow(promoter_positiveLabel))
+promoter_positiveLabel$transcript_ID[1:nrow(promoter_left_strand)]<- paste0(promoter_left_strand$transcript_ID,'-1')
+promoter_positiveLabel$transcript_ID[(nrow(promoter_left_strand)+1):nrow(promoter_positiveLabel)] <- paste0(promoter_left_strand$transcript_ID,'-2')
+
+###### Negative labelled, 3' region
+promoter_negativeLabel <- rbind(promoter_left_strand, promoter_right_strand)
+promoter_negativeLabel$strand <- rep('-', times = nrow(promoter_negativeLabel))
+promoter_negativeLabel$transcript_ID[1:nrow(promoter_left_strand)]<- paste0(promoter_left_strand$transcript_ID,'-3')
+promoter_negativeLabel$transcript_ID[(nrow(promoter_left_strand)+1):nrow(promoter_negativeLabel)] <- paste0(promoter_left_strand$transcript_ID,'-4')
+
+###### Merge 5' region and 3' region
+promoter <- rbind(promoter_positiveLabel, promoter_negativeLabel)
+######
+
+
+promoter
+for (i in 1:nrow(promoter)){## here we found that the 'chr' does not have 'chr' label, we need to add it
+  promoter$Chr[i] <- paste0('chr',promoter$chr[i])
+}
+promoter <- data.frame(transcript_ID = promoter$transcript_ID, chr = promoter$Chr, promoter[,2:3], strand = promoter$strand) 
+head(promoter); dim(promoter)
+promoter
+write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter_significant_beta_vs_alphaDelta_lincRNA.txt', 
+            sep = '\t', row.names = F, col.names = F, quote = F)
+
+
+#======================================================================================
+#             alpha-cell vs beta-cell and alpha-cell vs delta-cell
+#======================================================================================
+
+################### Perform differential gene expression ################
+############### Differential Gene Expression #################
+sampleA <- 'beta'
+sampleB <- 'acinal'
+sampleC <- 'alpha'
+sampleD <- 'delta'
+
+
+### Differential gene expression between sampleC (alpha-cell) and sampleA (beta-cell)
+#### Comparison between sampleA and sampleC
+contrastV <- c('celltype', sampleC, sampleA)
+res <- results(dds, contrast = contrastV)
+head(res)
+
+
+#### Calculate the mean value of gene expression in sampleA 
+baseC <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleC]
+baseMeanC <- as.data.frame(rowMeans(baseC, na.rm = T))
+colnames(baseMeanC) <- sampleC
+
+
+#### Calculate the mean value of gene expression in sampleC 
+baseA <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleA]
+baseMeanA <- as.data.frame(rowMeans(baseA, na.rm = T))
+colnames(baseMeanA) <- sampleA
+
+#### Prepare the res table of differential gene expression between sampleA and sampleC
+res <- cbind(baseMeanC, baseMeanA, as.data.frame(res))
+ID <- rownames(res)
+res <- cbind(ID, as.data.frame(res))
+res$padj[is.na(res$padj)]<- 1
+res <- res[order(res$padj),]
+res$significance <- (res$padj<0.05)
+
+
+#### Draw MA plot
+plotMA(res[,c(4,5,10)], main = "MAplot")
+
+
+#### Extract differential expressed gene
+res_de <- subset(res, res$padj<0.1, select=c('ID',sampleC,sampleA,'log2FoldChange','padj'))
+res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
+res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
+
+
+
+signifiant_genes_alpha_vs_beta <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+
+length(signifiant_genes_alpha_vs_beta)
+
+
+
+
+
+### Differential gene expression between sampleA (beta-cell) and sampleD (delta-cell)
+#### Comparison between sampleA and sampleD
+contrastV <- c('celltype', sampleC, sampleD)
+res <- results(dds, contrast = contrastV)
+head(res)
+
+
+#### Calculate the mean value of gene expression in sampleA 
+baseC <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleC]
+baseMeanC <- as.data.frame(rowMeans(baseC, na.rm = T))
+colnames(baseMeanC) <- sampleC
+
+
+#### Calculate the mean value of gene expression in sampleC 
+baseD <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleD]
+baseMeanD <- as.data.frame(rowMeans(baseD, na.rm = T))
+colnames(baseMeanD) <- sampleD
+
+#### Prepare the res table of differential gene expression between sampleA and sampleC
+res <- cbind(baseMeanC, baseMeanD, as.data.frame(res))
+ID <- rownames(res)
+res <- cbind(ID, as.data.frame(res))
+res$padj[is.na(res$padj)]<- 1
+res <- res[order(res$padj),]
+res$significance <- (res$padj<0.05)
+
+
+#### Draw MA plot
+plotMA(res[,c(4,5,10)], main = "MAplot")
+
+
+#### Extract differential expressed gene
+res_de <- subset(res, res$padj<0.1, select=c('ID',sampleC,sampleD,'log2FoldChange','padj'))
+res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
+res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
+
+
+
+signifiant_genes_alpha_vs_delta <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+
+length(signifiant_genes_alpha_vs_delta)
+
+
+#### Pick up the lincRNAs that are differentially expressed in between beta-cell and alpha-cell and
+#### between beta-cell and delta-cell
+signifiant_genes_alpha_vs_delta[signifiant_genes_alpha_vs_delta %in% signifiant_genes_alpha_vs_beta]
+
+################## Pick up the promoter regions ###################
+### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
+### the both ends. It is good to use 'dplyr' package here.
+library('dplyr')
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
+test_beta_coordinate <- read.table('significant_expressed_alpha_vs_betaDelta.txt', header = T, quote = "", sep = '\t', stringsAsFactors = F)
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -750, End = start + 250)[, c(1,5,6,4)]
+promoter_left_strand
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end - 250, End = end + 750)[,c(1,5,6,4)]
+promoter_right_strand
+
+
+######
+####### ++/--
+####### 对正负链上5’和3’区域的序列进行标注
+####### Positive labelled, 5' region
+promoter_positiveLabel <- rbind(promoter_left_strand, promoter_right_strand)
+promoter_positiveLabel$strand <- rep('+', times = nrow(promoter_positiveLabel))
+promoter_positiveLabel$transcript_ID[1:nrow(promoter_left_strand)]<- paste0(promoter_left_strand$transcript_ID,'-1')
+promoter_positiveLabel$transcript_ID[(nrow(promoter_left_strand)+1):nrow(promoter_positiveLabel)] <- paste0(promoter_left_strand$transcript_ID,'-2')
+
+###### Negative labelled, 3' region
+promoter_negativeLabel <- rbind(promoter_left_strand, promoter_right_strand)
+promoter_negativeLabel$strand <- rep('-', times = nrow(promoter_negativeLabel))
+promoter_negativeLabel$transcript_ID[1:nrow(promoter_left_strand)]<- paste0(promoter_left_strand$transcript_ID,'-3')
+promoter_negativeLabel$transcript_ID[(nrow(promoter_left_strand)+1):nrow(promoter_negativeLabel)] <- paste0(promoter_left_strand$transcript_ID,'-4')
+
+###### Merge 5' region and 3' region
+promoter <- rbind(promoter_positiveLabel, promoter_negativeLabel)
+######
+
+
+promoter
+for (i in 1:nrow(promoter)){## here we found that the 'chr' does not have 'chr' label, we need to add it
+  promoter$Chr[i] <- paste0('chr',promoter$chr[i])
+}
+promoter <- data.frame(transcript_ID = promoter$transcript_ID, chr = promoter$Chr, promoter[,2:3], strand = promoter$strand) 
+head(promoter); dim(promoter)
+promoter
+write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter_significant_alpha_vs_betaDelta_lincRNA.txt', 
+            sep = '\t', row.names = F, col.names = F, quote = F)
+
+
+
+
+
+#======================================================================================
+#             delta-cell vs beta-cell and delta-cell vs alpha-cell
+#======================================================================================
+
+################### Perform differential gene expression ################
+############### Differential Gene Expression #################
+sampleA <- 'beta'
+sampleB <- 'acinal'
+sampleC <- 'alpha'
+sampleD <- 'delta'
+
+
+### Differential gene expression between sampleD (delta-cell) and sampleA (beta-cell)
+#### Comparison between sampleA and sampleC
+contrastV <- c('celltype', sampleD, sampleA)
+res <- results(dds, contrast = contrastV)
+head(res)
+
+
+#### Calculate the mean value of gene expression in sampleA 
+baseD <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleD]
+baseMeanD <- as.data.frame(rowMeans(baseD, na.rm = T))
+colnames(baseMeanD) <- sampleD
+
+
+#### Calculate the mean value of gene expression in sampleC 
+baseA <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleA]
+baseMeanA <- as.data.frame(rowMeans(baseA, na.rm = T))
+colnames(baseMeanA) <- sampleA
+
+#### Prepare the res table of differential gene expression between sampleA and sampleC
+res <- cbind(baseMeanD, baseMeanA, as.data.frame(res))
+ID <- rownames(res)
+res <- cbind(ID, as.data.frame(res))
+res$padj[is.na(res$padj)]<- 1
+res <- res[order(res$padj),]
+res$significance <- (res$padj<0.05)
+
+
+
+#### Extract differential expressed gene
+res_de <- subset(res, res$padj<0.1, select=c('ID',sampleD,sampleA,'log2FoldChange','padj'))
+res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
+res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
+
+
+
+signifiant_genes_delta_vs_beta <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+
+length(signifiant_genes_delta_vs_beta)
+
+
+
+
+
+### Differential gene expression between sampleD (delta-cell) and sampleC (alpha-cell)
+#### Comparison between sampleA and sampleD
+contrastV <- c('celltype', sampleD, sampleC)
+res <- results(dds, contrast = contrastV)
+head(res)
+
+
+#### Calculate the mean value of gene expression in sampleC 
+baseD <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleD]
+baseMeanD <- as.data.frame(rowMeans(baseD, na.rm = T))
+colnames(baseMeanD) <- sampleD
+
+#### Calculate the mean value of gene expression in sampleA 
+baseC <- counts(dds, normalized = T)[,colData(dds)$celltype==sampleC]
+baseMeanC <- as.data.frame(rowMeans(baseC, na.rm = T))
+colnames(baseMeanC) <- sampleC
+
+
+
+#### Prepare the res table of differential gene expression between sampleA and sampleC
+res <- cbind(baseMeanD, baseMeanC, as.data.frame(res))
+ID <- rownames(res)
+res <- cbind(ID, as.data.frame(res))
+res$padj[is.na(res$padj)]<- 1
+res <- res[order(res$padj),]
+res$significance <- (res$padj<0.05)
+
+
+
+
+
+#### Extract differential expressed gene
+res_de <- subset(res, res$padj<0.1, select=c('ID',sampleD,sampleC,'log2FoldChange','padj'))
+res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
+res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
+
+
+
+signifiant_genes_delta_vs_alpha <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+
+length(signifiant_genes_delta_vs_alpha)
+
+
+#### Pick up the lincRNAs that are differentially expressed in between beta-cell and alpha-cell and
+#### between beta-cell and delta-cell
+b <- signifiant_genes_delta_vs_beta[signifiant_genes_delta_vs_beta %in% signifiant_genes_delta_vs_alpha]
+
+################## Pick up the promoter regions ###################
+### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
+### the both ends. It is good to use 'dplyr' package here.
+library('dplyr')
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
+test_beta_coordinate <- read.table('significant_expressed_delta_vs_alphaBeta.txt', header = T, quote = "", sep = '\t', stringsAsFactors = F)
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -750, End = start + 250)[, c(1,5,6,4)]
+promoter_left_strand
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end - 250, End = end + 750)[,c(1,5,6,4)]
+promoter_right_strand
+
+
+######
+####### ++/--
+####### 对正负链上5’和3’区域的序列进行标注
+####### Positive labelled, 5' region
+promoter_positiveLabel <- rbind(promoter_left_strand, promoter_right_strand)
+promoter_positiveLabel$strand <- rep('+', times = nrow(promoter_positiveLabel))
+promoter_positiveLabel$transcript_ID[1:nrow(promoter_left_strand)]<- paste0(promoter_left_strand$transcript_ID,'-1')
+promoter_positiveLabel$transcript_ID[(nrow(promoter_left_strand)+1):nrow(promoter_positiveLabel)] <- paste0(promoter_left_strand$transcript_ID,'-2')
+
+###### Negative labelled, 3' region
+promoter_negativeLabel <- rbind(promoter_left_strand, promoter_right_strand)
+promoter_negativeLabel$strand <- rep('-', times = nrow(promoter_negativeLabel))
+promoter_negativeLabel$transcript_ID[1:nrow(promoter_left_strand)]<- paste0(promoter_left_strand$transcript_ID,'-3')
+promoter_negativeLabel$transcript_ID[(nrow(promoter_left_strand)+1):nrow(promoter_negativeLabel)] <- paste0(promoter_left_strand$transcript_ID,'-4')
+
+###### Merge 5' region and 3' region
+promoter <- rbind(promoter_positiveLabel, promoter_negativeLabel)
+######
+
+
+promoter
+for (i in 1:nrow(promoter)){## here we found that the 'chr' does not have 'chr' label, we need to add it
+  promoter$Chr[i] <- paste0('chr',promoter$chr[i])
+}
+promoter <- data.frame(transcript_ID = promoter$transcript_ID, chr = promoter$Chr, promoter[,2:3], strand = promoter$strand) 
+head(promoter); dim(promoter)
+promoter
+write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter_significant_delta_vs_alphaBeta_lincRNA.txt', 
+            sep = '\t', row.names = F, col.names = F, quote = F)
+
+
+
 
 
