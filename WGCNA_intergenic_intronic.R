@@ -1667,9 +1667,6 @@ res <- res[order(res$padj),]
 res$significance <- (res$padj<0.05)
 
 
-#### Draw MA plot
-plotMA(res[,c(4,5,10)], main = "MAplot")
-
 
 #### Extract differential expressed gene
 res_de <- subset(res, res$padj<0.1, select=c('ID',sampleA,sampleC,'log2FoldChange','padj'))
@@ -1677,38 +1674,9 @@ res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
 res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
-#### Volcano plot showing upregulated and downregulated genes
-res$change <- as.factor(ifelse(res$padj < 0.05 & abs(res$log2FoldChange) > 2, 
-                               ifelse(res$log2FoldChange > 1, 'UP', 'DOWN'), 'NOT'))
-
-
-
-##### Plot VolcanoPlot
-library(ggplot2)
-library(ggrepel)
-this_title <- paste('VolcanoPlot of',sampleA, 'vs', sampleC,'\nCutoff for logFC is 1', 
-                    '\nThe number of upregulated genes is', 
-                    nrow(res[res$change == 'UP',]),'\nThe number of downregulated gene is', 
-                    nrow(res[res$change == 'DOWN',]))
-
-
-ggplot(data = res, aes(x=log2FoldChange, y = -log10(padj), color = change, alpha = 0.5)) +
-  geom_point()+
-  scale_color_manual(values = c('blue','black', 'red')) +
-  geom_hline(yintercept = -log10(0.05),lty=4, lwd=0.6,alpha=0.5)+
-  geom_vline(xintercept = c(-1,1),lty=4, lwd=0.6,alpha=0.5)+
-  theme_bw(base_size = 10)+
-  theme(panel.border = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = 'black'))+
-  labs(title= this_title, x= 'log2(fold change)', y = '-log10(padj)')+
-  theme(plot.title = element_text(hjust = 0.5))
-
-
 signifiant_genes_beta_vs_alpha <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
 
 length(signifiant_genes_beta_vs_alpha)
-
-
-
 
 
 ### Differential gene expression between sampleA (beta-cell) and sampleD (delta-cell)
@@ -1738,40 +1706,10 @@ res <- res[order(res$padj),]
 res$significance <- (res$padj<0.05)
 
 
-#### Draw MA plot
-plotMA(res[,c(4,5,10)], main = "MAplot")
-
-
 #### Extract differential expressed gene
 res_de <- subset(res, res$padj<0.1, select=c('ID',sampleA,sampleC,'log2FoldChange','padj'))
 res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
 res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
-
-
-#### Volcano plot showing upregulated and downregulated genes
-res$change <- as.factor(ifelse(res$padj < 0.05 & abs(res$log2FoldChange) > 2, 
-                               ifelse(res$log2FoldChange > 1, 'UP', 'DOWN'), 'NOT'))
-
-
-
-##### Plot VolcanoPlot
-library(ggplot2)
-library(ggrepel)
-this_title <- paste('VolcanoPlot of',sampleA, 'vs', sampleD,'\nCutoff for logFC is 1', 
-                    '\nThe number of upregulated genes is', 
-                    nrow(res[res$change == 'UP',]),'\nThe number of downregulated gene is', 
-                    nrow(res[res$change == 'DOWN',]))
-
-
-ggplot(data = res, aes(x=log2FoldChange, y = -log10(padj), color = change, alpha = 0.5)) +
-  geom_point()+
-  scale_color_manual(values = c('blue','black', 'red')) +
-  geom_hline(yintercept = -log10(0.05),lty=4, lwd=0.6,alpha=0.5)+
-  geom_vline(xintercept = c(-1,1),lty=4, lwd=0.6,alpha=0.5)+
-  theme_bw(base_size = 10)+
-  theme(panel.border = element_blank(),panel.grid.major = element_blank(), panel.grid.minor = element_blank(), axis.line = element_line(colour = 'black'))+
-  labs(title= this_title, x= 'log2(fold change)', y = '-log10(padj)')+
-  theme(plot.title = element_text(hjust = 0.5))
 
 
 signifiant_genes_beta_vs_delta <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
@@ -1781,7 +1719,9 @@ length(signifiant_genes_beta_vs_delta)
 
 #### Pick up the lincRNAs that are differentially expressed in between beta-cell and alpha-cell and
 #### between beta-cell and delta-cell
-signifiant_genes_beta_vs_delta[signifiant_genes_beta_vs_delta %in% signifiant_genes_beta_vs_alpha]
+b<- signifiant_genes_beta_vs_delta[signifiant_genes_beta_vs_delta %in% signifiant_genes_beta_vs_alpha]
+length(b)
+
 
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
@@ -1871,10 +1811,6 @@ res <- res[order(res$padj),]
 res$significance <- (res$padj<0.05)
 
 
-#### Draw MA plot
-plotMA(res[,c(4,5,10)], main = "MAplot")
-
-
 #### Extract differential expressed gene
 res_de <- subset(res, res$padj<0.1, select=c('ID',sampleC,sampleA,'log2FoldChange','padj'))
 res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
@@ -1917,10 +1853,6 @@ res <- res[order(res$padj),]
 res$significance <- (res$padj<0.05)
 
 
-#### Draw MA plot
-plotMA(res[,c(4,5,10)], main = "MAplot")
-
-
 #### Extract differential expressed gene
 res_de <- subset(res, res$padj<0.1, select=c('ID',sampleC,sampleD,'log2FoldChange','padj'))
 res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
@@ -1935,7 +1867,8 @@ length(signifiant_genes_alpha_vs_delta)
 
 #### Pick up the lincRNAs that are differentially expressed in between beta-cell and alpha-cell and
 #### between beta-cell and delta-cell
-signifiant_genes_alpha_vs_delta[signifiant_genes_alpha_vs_delta %in% signifiant_genes_alpha_vs_beta]
+a <- signifiant_genes_alpha_vs_delta[signifiant_genes_alpha_vs_delta %in% signifiant_genes_alpha_vs_beta]
+length(a)
 
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
@@ -2035,9 +1968,6 @@ signifiant_genes_delta_vs_beta <- row.names(subset(res, -log10(padj) > 2 & res$l
 length(signifiant_genes_delta_vs_beta)
 
 
-
-
-
 ### Differential gene expression between sampleD (delta-cell) and sampleC (alpha-cell)
 #### Comparison between sampleA and sampleD
 contrastV <- c('celltype', sampleD, sampleC)
@@ -2083,7 +2013,8 @@ length(signifiant_genes_delta_vs_alpha)
 
 #### Pick up the lincRNAs that are differentially expressed in between beta-cell and alpha-cell and
 #### between beta-cell and delta-cell
-b <- signifiant_genes_delta_vs_beta[signifiant_genes_delta_vs_beta %in% signifiant_genes_delta_vs_alpha]
+d <- signifiant_genes_delta_vs_beta[signifiant_genes_delta_vs_beta %in% signifiant_genes_delta_vs_alpha]
+length(d)
 
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
@@ -2129,5 +2060,10 @@ write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter
 
 
 
-
+######### Heatmap of differential expressed lincRNA ###########
+e <- read.table('differential_exprs_lincRNA_alphaBetaDelta.txt', header = T, sep = '\t', quote = "", stringsAsFactors = F)
+dge <- normalized_counts[rownames(normalized_counts) %in% e$transcript_ID, c(7:11,2:6,12:15)]
+pheatmap(dge, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50), 
+         cluster_rows = T, scale = 'row', cluster_cols = T, annotation_col = sample, 
+         cutree_rows = 3)
 
