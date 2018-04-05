@@ -2112,20 +2112,109 @@ dge1 <- transcripts[rownames(transcripts) %in% e$transcript_ID, c(7:11,2:6,12:15
 pheatmap(dge1, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50), 
          cluster_rows = T, scale = 'row', cluster_cols = T, annotation_col = sample, 
          cutree_rows = 3)
+write.table(x = dge, file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/dge.txt', sep = '\t', quote = F)
+write.table(x = dge1, file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/dge1.txt', sep = '\t', quote = F)
 ##### Here, we can see that the expression matrix of potential lincRNAs in the corresponding samples
 ##### (three types of islet cells) are stored in dge (normalized_counts/DESeq2 according to NumReads) and
 ##### dge1 (TPM)
 
 ##### The next step we need to do is to extract the expression matrix of GO enriched genes in 
 ##### selected three types of cell and then do the correlation analysis
+yellow <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_EDA/yellow.txt',
+                     header = T, sep = '\t', quote = "")
+dge <- read.table('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/dge.txt', header = T, quote = "", sep = '\t', stringsAsFactors = F)
+dge1 <- read.table('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/dge1.txt', header = T, quote = "", sep = '\t', stringsAsFactors = F)
+head(yellow)
+head(dge)
+head(dge1)
+a <- rbind(dge, yellow)
+pearson_cor <- as.matrix(cor(t(a), method = 'pearson'))
+head(pearson_cor)
+hc <- hcluster(t(a), method="pearson")
+hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+heatmap.2(pearson_cor, trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
+pheatmap(pearson_cor)
+dim(e)
+dim(yellow)
+
+?cor.test
+
+yell <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_EDA/yell.txt',
+                     header = T, sep = '\t', quote = "")
+head(yell)
+head(dge)
+a <- rbind(dge, yell)
+pearson_cor <- as.matrix(cor(t(a), method = 'pearson'))
+head(pearson_cor)
+hc <- hcluster(t(a), method="pearson")
+hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+heatmap.2(pearson_cor, trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
+pheatmap(pearson_cor)
+dim(e)
+dim(yellow)
+dim(yell)
+dim(dge)
+
+b
+d
+for (i in b){
+  for (j in d){
+    pdf(file=paste(i," correlation with",j))
+    par(mfrow = c(1,1))
+    plot(as.vector(as.matrix(yell[row.names(yell) == i,])), 
+         as.vector(as.matrix(dge[row.names(dge) == j,])), 
+         xlim = c(min(as.vector(as.matrix(yell[row.names(yell) == i,]))),10), 
+         ylim = c(0,max(as.vector(as.matrix(dge[row.names(dge) == j,])))), cex = 0.5)
+    dev.off
+  }
+}
+
+
+getwd()
+?cor.test
+library(WGCNA)
+plot(yell[row.names(yell) == 'ENSDARG0000020475',], dge[row.names(dge) == d[1],], xlim = c(0,100), ylim = c(0,100), cex = 0.5)
+verboseScatterplot(abs(geneModuleMembership[moduleGenes, column]),
+                   abs(geneTraitSignificance[moduleGenes, traitColumn]),
+                   xlab = paste("Module Membership in", module, "module"),
+                   ylab = paste("Gene significance for ",trait),
+                   main = paste("Module membership vs. gene significance\n"),
+                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2, col = module)
+verboseScatterplot(yell[row.names(yell) == 'ENSDARG0000020475',], dge[row.names(dge) == 'TU41897',], 
+                   xlim = c(0,10000), ylim = c(0,1000), cex = 0.5,
+                   cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2)
+
+yell[row.names(yell) == 'ENSDARG0000020475',]
+dge[row.names(dge) == 'TU41897',]
+plot(yell[row.names(yell) == 'ENSDARG0000020475',], dge[row.names(dge) == 'TU41897',])
+as.vector(as.matrix(yell[row.names(yell) == 'ENSDARG00000020475',]))
+as.vector(as.matrix(dge[row.names(dge) == 'TU41897',]))      
+cor.test(as.vector(as.matrix(yell[row.names(yell) == 'ENSDARG00000020475',])), 
+         as.vector(as.matrix(dge[row.names(dge) == 'TU41897',])))
+plot(as.vector(as.matrix(yell[row.names(yell) == 'ENSDARG00000020475',])), 
+     as.vector(as.matrix(dge[row.names(dge) == 'TU41897',])), cex = 0.8)
+b
+plot(as.vector(as.matrix(yell[row.names(yell) == 'ENSDARG00000063433',])), 
+     as.vector(as.matrix(dge[row.names(dge) == 'TU41897',])), 
+     xlim = c(min(as.vector(as.matrix(yell[row.names(yell) == 'ENSDARG00000063433',]))),10), 
+     ylim = c(0,max(as.vector(as.matrix(dge[row.names(dge) == 'TU41897',])))), cex = 0.5,
+     cex.main = 1.2, cex.lab = 1.2, cex.axis = 1.2)
 
 
 
 
-
-
-
-
-
-
-
+b
+d
+for (i in b){
+  for (j in d){
+    pdf(file=paste(i, " correlation with", j),width=7,height=7)
+    par(mfrow = c(1,1))
+    verboseScatterplot(as.vector(as.matrix(yell[row.names(yell) == i,])), 
+         as.vector(as.matrix(dge[row.names(dge) == j,])), 
+         xlim = c(min(as.vector(as.matrix(yell[row.names(yell) == i,]))),10), 
+         ylim = c(0,max(as.vector(as.matrix(dge[row.names(dge) == j,])))))
+    dev.off()
+  }
+}
+b <- c("ENSDARG00000020475","ENSDARG00000095223","ENSDARG00000063433")
+d <- c("TU41897","TU52979","TU58615","TU87440","TU31610")
