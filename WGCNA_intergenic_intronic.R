@@ -22,6 +22,7 @@ sample <- read.csv('SampleGroup.csv', header = T, row.names = 1, colClasses = 'f
 transcripts <- read.table('merge_tpm.txt', header = T, row.names = 1)
 intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt')
 intergenic_intronic <- as.vector(as.matrix(intergenic_intronic))
+length(intergenic_intronic)
 colnames(transcripts) <- paste("DCD002", c(492:511),"SQ", sep = "")
 summary(transcripts);dim(transcripts)
 ### Have a look at the transcripts distribution after TPM normalization
@@ -446,6 +447,8 @@ length_exons_2plus <- read.table('exon_2plus.csv', header = FALSE, sep = ",",
 head(length_exons_2plus); dim(length_exons_2plus)
 table(rowSums(length_exons_2plus, na.rm = T) < 200)
 which(rowSums(length_exons_2plus, na.rm = T) < 200)
+length_exons_2plus_length_highThan200 <- length_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]
+dim(length_exons_2plus_length_highThan200)
 #### In transcripts with exons >= 2 (5600), transcripts with length < 200 = 7, >= 200 is 5593
 #### Select the transcriptes with exons >= 2 and length >200 (TU_id and exon_number information)
 num_exons_2plus_200ntPlus <- num_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]
@@ -453,7 +456,7 @@ num_exons_2plus_200ntPlus <- as.data.frame(num_exons_2plus_200ntPlus)
 num_exons_2plus_200ntPlus$type <- 'intergenic_intronic'
 colnames(num_exons_2plus_200ntPlus)[1] <- 'exon_num'
 num_exons_2plus_200ntPlus <- num_exons_2plus_200ntPlus[,c(2,1)]
-
+dim(num_exons_2plus_200ntPlus); head(num_exons_2plus_200ntPlus)
 
 ### Check the length (mean, median, min and max) of the transcripts with exon >=2 and length >200nt
 summary(rowSums(length_exons_2plus[rowSums(length_exons_2plus, na.rm = T) >= 200,], na.rm = T)) # length summary
@@ -490,6 +493,32 @@ colnames(known_transcript_exon_num) <- c('ID', 'exon_num')
 known_transcript_exon_num$type <- 'protein_coding'
 known_transcript_exon_num <- known_transcript_exon_num[,c(3,2)]
 head(known_transcript_exon_num)
+summary(known_transcript_exon_num$exon_num)
+
+length_exons_knownGene <- read.table('assembly.txt', header = F, sep = '\t', quote = "", row.names = 1)
+length_exons_knownGene <- length_exons_knownGene[rownames(length_exons_knownGene) %in% known_transcript_exon_num$V1,]
+dim(length_exons_knownGene)
+#### check the length of the transcripts by rowSums of each exons, na.rm = T
+summary(rowSums(length_exons_knownGene, na.rm = T))
+
+#### So, now we have the length of both intergenic_intronic (potential lincRNAs) and known transcripts
+#### The two objects store the length information are "length_exons_2plus_length_highThan200" and "length_lincRNA"
+length_known_genes <- as.data.frame(as.matrix(rowSums(length_exons_knownGene, na.rm = T)))
+head(length_known_genes); dim(length_known_genes)
+length_known_genes$type <- rep('protein-coding', nrow(length_known_genes))
+colnames(length_known_genes) <- c('length','type')
+
+
+length_lincRNA <- as.data.frame(as.matrix(rowSums(length_exons_2plus_length_highThan200, na.rm = T)))
+length_lincRNA$type <- rep('lincRNA', nrow(length_lincRNA ))
+colnames(length_lincRNA) <- c('length','type')
+head(length_lincRNA); dim(length_lincRNA)
+total <- rbind(length_lincRNA,length_known_genes); head(total)
+p <- ggplot(data = total, aes(x = length,fill = type)) + 
+  geom_density(aes(alpha = 0.8)) + theme_classic() + 
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  geom_vline(xintercept=c(1695,3264),linetype="dashed")
+p
 
 ########## Comparison of exon numbers of lncRNA(intergenic and intronic region) and protein_coding gene ###########
 ### First, check protein coding transcripts
@@ -2060,10 +2089,27 @@ write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter
 
 
 
+#=============================================================================
+#
+#      Correlation between lincRNA and genesets you are interested
+#
+#=============================================================================
+
+
+
+
 ######### Heatmap of differential expressed lincRNA ###########
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
+library(pheatmap)
 e <- read.table('differential_exprs_lincRNA_alphaBetaDelta.txt', header = T, sep = '\t', quote = "", stringsAsFactors = F)
+#### according to normalized_counts
 dge <- normalized_counts[rownames(normalized_counts) %in% e$transcript_ID, c(7:11,2:6,12:15)]
 pheatmap(dge, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50), 
+         cluster_rows = T, scale = 'row', cluster_cols = T, annotation_col = sample, 
+         cutree_rows = 3)
+#### according to TPM
+dge1 <- transcripts[rownames(transcripts) %in% e$transcript_ID, c(7:11,2:6,12:15)]
+pheatmap(dge1, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50), 
          cluster_rows = T, scale = 'row', cluster_cols = T, annotation_col = sample, 
          cutree_rows = 3)
 
