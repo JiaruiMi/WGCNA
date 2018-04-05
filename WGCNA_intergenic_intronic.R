@@ -2115,3 +2115,17 @@ pheatmap(dge1, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50),
 ##### Here, we can see that the expression matrix of potential lincRNAs in the corresponding samples
 ##### (three types of islet cells) are stored in dge (normalized_counts/DESeq2 according to NumReads) and
 ##### dge1 (TPM)
+
+##### The next step we need to do is to extract the expression matrix of GO enriched genes in 
+##### selected three types of cell and then do the correlation analysis
+
+
+
+
+
+
+
+
+
+
+
