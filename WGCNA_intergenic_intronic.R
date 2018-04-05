@@ -2112,4 +2112,6 @@ dge1 <- transcripts[rownames(transcripts) %in% e$transcript_ID, c(7:11,2:6,12:15
 pheatmap(dge1, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50), 
          cluster_rows = T, scale = 'row', cluster_cols = T, annotation_col = sample, 
          cutree_rows = 3)
-
+##### Here, we can see that the expression matrix of potential lincRNAs in the corresponding samples
+##### (three types of islet cells) are stored in dge (normalized_counts/DESeq2 according to NumReads) and
+##### dge1 (TPM)
