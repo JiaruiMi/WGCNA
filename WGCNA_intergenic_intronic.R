@@ -458,7 +458,7 @@ dim(length_exons_2plus_length_highThan200)
 #### Select the transcriptes with exons >= 2 and length >200 (TU_id and exon_number information)
 num_exons_2plus_200ntPlus <- num_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]
 num_exons_2plus_200ntPlus <- as.data.frame(num_exons_2plus_200ntPlus)
-num_exons_2plus_200ntPlus$type <- 'intergenic_intronic'
+num_exons_2plus_200ntPlus$type <- 'intergenic & intronic'
 colnames(num_exons_2plus_200ntPlus)[1] <- 'exon_num'
 num_exons_2plus_200ntPlus <- num_exons_2plus_200ntPlus[,c(2,1)]
 dim(num_exons_2plus_200ntPlus); head(num_exons_2plus_200ntPlus)
@@ -495,13 +495,13 @@ summary(num_exons_inter_intro [which(rowSums(length_exons_assembly_intergenic_in
 setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lincRNA')
 known_transcript_exon_num <- read.table('protein_coding_exon.txt', sep = ' ', header = F, quote = "")
 colnames(known_transcript_exon_num) <- c('ID', 'exon_num')
-known_transcript_exon_num$type <- 'protein_coding'
-known_transcript_exon_num <- known_transcript_exon_num[,c(3,2)]
+known_transcript_exon_num$type <- 'protein-coding'
+known_transcript_exon_num <- known_transcript_exon_num[,c(1,3,2)]
 head(known_transcript_exon_num)
 summary(known_transcript_exon_num$exon_num)
 
-length_exons_knownGene <- read.table('assembly.txt', header = F, sep = '\t', quote = "", row.names = 1)
-length_exons_knownGene <- length_exons_knownGene[rownames(length_exons_knownGene) %in% known_transcript_exon_num$V1,]
+length_exons_knownGene <- read.csv('assembly.csv', header = F, quote = "", row.names = 1)
+length_exons_knownGene <- length_exons_knownGene[rownames(length_exons_knownGene) %in% known_transcript_exon_num$ID,]
 dim(length_exons_knownGene)
 #### check the length of the transcripts by rowSums of each exons, na.rm = T
 summary(rowSums(length_exons_knownGene, na.rm = T))
@@ -515,14 +515,16 @@ colnames(length_known_genes) <- c('length','type')
 
 
 length_lincRNA <- as.data.frame(as.matrix(rowSums(length_exons_2plus_length_highThan200, na.rm = T)))
-length_lincRNA$type <- rep('lincRNA', nrow(length_lincRNA ))
+length_lincRNA$type <- rep('integenic & intronic', nrow(length_lincRNA ))
 colnames(length_lincRNA) <- c('length','type')
 head(length_lincRNA); dim(length_lincRNA)
 total <- rbind(length_lincRNA,length_known_genes); head(total)
 p <- ggplot(data = total, aes(x = length,fill = type)) + 
   geom_density(aes(alpha = 0.8)) + theme_classic() + 
   scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
-  geom_vline(xintercept=c(1695,3264),linetype="dashed")
+  geom_vline(xintercept=c(1695,3264),linetype="dashed") +
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
+  labs(x = 'Transcripts length', y = 'Density')
 p
 
 ########## Comparison of exon numbers of lncRNA(intergenic and intronic region) and protein_coding gene ###########
@@ -533,10 +535,14 @@ ggplot(data = known_transcript_exon_num, aes(x = exon_num)) + geom_density(bins 
 ggplot(data = num_exons_2plus_200ntPlus, aes(x = exon_num)) + geom_histogram(bins = 35)+ theme_classic()
 ggplot(data = num_exons_2plus_200ntPlus, aes(x = exon_num)) + geom_density()+ theme_classic()+ xlim(0,20)
 ### Third, let's merge the data together and check again
-known_plus_intergenic_intronic <- rbind(num_exons_2plus_200ntPlus, known_transcript_exon_num)
+known_plus_intergenic_intronic <- rbind(num_exons_2plus_200ntPlus, known_transcript_exon_num[,2:3])
+head(known_plus_intergenic_intronic)
 ggplot(data = known_plus_intergenic_intronic, aes(x = exon_num, fill = type, colour = type)) + 
   geom_histogram(position = 'stack', alpha = 0.8,  binwidth = 1)  + scale_fill_brewer(palette = "Set1") +
-  theme_classic()+ xlim(0,35) + labs(x = 'Exon number', y = 'counts')
+  theme_classic()+ xlim(0,40) + labs(x = 'Exon numbers', y = 'Counts of transcripts')+
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 14)) +
+  scale_y_continuous(breaks = seq(0,6000,1000))
+
 
 #=====================================================================================
 #    Clean your expression matrix with transcripts with exon >= 2 and length > 200nt
