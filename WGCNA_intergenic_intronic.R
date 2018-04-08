@@ -646,13 +646,18 @@ head(datExpr1)[21]; head(datExpr1[22]); colnames(datExpr1)
 
 ### Use loess model to fit the curve in order to select the highly variable genes
 #### Plotting the regression line and label the highly variable genes based on certain threshold (though subjective)
-p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
+p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV), col = 'black')+ geom_point() + 
   geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
   geom_smooth(method = lm, col = 'red', na.rm = T) + 
   ylim(c(0.4,2.6)) +
   geom_vline(xintercept = 1, col = 'darkgreen', lty = 2, lwd = 1) +
   theme_classic() +
-  labs(x = 'Log2_mean', y = 'Log2_CV');p
+  labs(x = 'Log2_mean', y = 'Log2_CV') + 
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
+  labs(x = 'Mean of Number of reads (log2-transformed)', y = 'Coefficient of variance (log2-transformed)') +
+  geom_point(data = datExpr1[datExpr1$log2_CV > prediction$fit  & datExpr1$log2_mean > 1,1:22], 
+             aes(x = log2_mean, y = log2_CV), col = 'red') +
+  scale_x_continuous(breaks = seq(0,8,1));p
 
 p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() + 
   geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
