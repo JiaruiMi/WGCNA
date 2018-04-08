@@ -100,12 +100,17 @@ p <- ggplot(data = exprSet_L,aes(x = variable, y = value, fill = group))+geom_vi
   theme(text=element_text(face='bold'),axis.text.x=element_text(angle=90,hjust=1),axis.title=element_blank())
 p
 #### histogram (Here we can see the negative binomial distribution of read counts of all genes)
-p <- ggplot(exprSet_L, aes(value, fill = group))+geom_histogram(bins = 200)+facet_wrap(~variable, nrow = 4)
+p <- ggplot(exprSet_L, aes(value, fill = group))+geom_histogram(bins = 200)+
+  facet_wrap(~variable, nrow = 4) +
+  theme(axis.title.x = element_text(size = 18), axis.title.y = element_text(size = 18))
 p
 #### density plot
 p <- ggplot(exprSet_L, aes(value, fill = group, col = group))+geom_density()+
-  facet_wrap(~variable, nrow = 4) + labs(x = 'Log_normalized_NumReads', y = 'Density') +
-  theme_classic()
+  facet_wrap(~variable, nrow = 4) + labs(x = 'log-transformed number of reads (from Salmon)', y = 'Density') +
+  theme_classic() +
+  theme(axis.title = element_text(size = 16),
+        axis.text = element_text(size = 12)) +
+  scale_x_continuous(limits = c(-5,20))
 p
 p <- ggplot(exprSet_L, aes(value, col = group))+geom_density()
 p
@@ -2127,7 +2132,7 @@ dge1 <- read.table('/Users/mijiarui/R_bioinformatics_project/Master_thesis_proje
 head(yellow)
 head(dge)
 head(dge1)
-a <- rbind(dge, yellow)
+a <- rbind(dge1, yellow)
 pearson_cor <- as.matrix(cor(t(a), method = 'pearson'))
 head(pearson_cor)
 hc <- hcluster(t(a), method="pearson")
@@ -2143,19 +2148,20 @@ yell <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesi
                      header = T, sep = '\t', quote = "")
 head(yell)
 head(dge)
-a <- rbind(dge, yell)
+a <- rbind(dge1, yell)
 pearson_cor <- as.matrix(cor(t(a), method = 'pearson'))
 head(pearson_cor)
 hc <- hcluster(t(a), method="pearson")
 hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
 heatmap.2(pearson_cor, trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
+library(pheatmap)
 pheatmap(pearson_cor)
 dim(e)
 dim(yellow)
 dim(yell)
 dim(dge)
 
-b
+b <- c()
 d
 for (i in b){
   for (j in d){
@@ -2211,8 +2217,9 @@ for (i in b){
     par(mfrow = c(1,1))
     verboseScatterplot(as.vector(as.matrix(yell[row.names(yell) == i,])), 
          as.vector(as.matrix(dge[row.names(dge) == j,])), 
-         xlim = c(min(as.vector(as.matrix(yell[row.names(yell) == i,]))),10), 
-         ylim = c(0,max(as.vector(as.matrix(dge[row.names(dge) == j,])))))
+         xlim = c(min(as.vector(as.matrix(yell[row.names(yell) == i,]))),max(as.vector(as.matrix(yell[row.names(yell) == i,])))), 
+         ylim = c(min(as.vector(as.matrix(dge[row.names(dge) == j,]))),max(as.vector(as.matrix(dge[row.names(dge) == j,])))), 
+         cex = 0.5)
     dev.off()
   }
 }
