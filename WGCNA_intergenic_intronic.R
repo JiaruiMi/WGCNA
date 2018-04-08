@@ -714,7 +714,9 @@ library(ggbiplot)
 pca <- prcomp(t(datExpr0), scale. = T)   # remember to transpose the matrix
 plot(pca$x[,1],pca$x[,2])
 ggbiplot(pca ,choices = 1:2, obs.scale = T,labels = NULL, var.scale = T,groups = sample$celltype, ellipse = T, circle = T, var.axes = F, alpha = 0.5) + 
-  theme(legend.direction = 'horizontal', legend.position = 'top')+theme_classic() 
+  theme(legend.direction = 'horizontal', legend.position = 'top')+theme_classic() +
+  labs(x = "PC1 (42.2%)", y = "PC2 (13.8%)") +
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12))
 
 
 ###### Sample Cluster (样本聚类) ######
