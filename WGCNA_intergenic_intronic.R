@@ -426,6 +426,7 @@ pv.out <- pathview(gene.data = geneList_foldchange_beta_with_acinal_2,pathway.id
 ############# STEP 0: Prepare your count table (TPM) for downstream analysis ##############
 ## set working directory
 setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lincRNA')
+setwd('/Users/mijiarui/RNA-seq/TACO_gtf_merge/total')
 ## load packages for data visulizations
 library(ggplot2)
 library(ggrepel)
@@ -440,6 +441,7 @@ library(ggrepel)
 ## reads.csv detects the number of columns according to the first five rows.
 ## To prepare for the dataframe, first you need to know the max number of exons for the transcripts
 num_exons_2plus <- read.csv('number_exons_2plus.csv', header = F)
+head(num_exons_2plus)
 dim(num_exons_2plus); max(num_exons_2plus) # number of transcripts with exons >= 2 is 5600; the maximum number of exons is 35
 ggplot(data = num_exons_2plus, aes(x = V1)) + geom_histogram(bins = 35) + theme_classic() 
 summary(num_exons_2plus) 
@@ -469,7 +471,7 @@ summary(num_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]) 
 
 
 #==============================================================================
-#    Novel transcripts with in intergenic and intronic regions (exon = 1 or >= 2)
+#    Novel transcripts within intergenic and intronic regions (exon = 1 or >= 2)
 #==============================================================================
 
 num_exons_inter_intro <- read.csv('number_exons_assembly_intergenic_intronic.csv', header = F)
@@ -482,6 +484,7 @@ summary(num_exons_inter_intro); dim(num_exons_inter_intro)
 ### Filter out those with transcripts length < 200
 length_exons_assembly_intergenic_intronic <- read.table('exon_assembly_intergenic_intronic.csv', header = FALSE, sep = ",", 
                                                         col.names = paste0("V",seq_len(35)), fill = TRUE)
+dim(length_exons_assembly_intergenic_intronic)
 table(rowSums(length_exons_assembly_intergenic_intronic, na.rm = T) < 200)
 index_length_lessThan_200 <- which(rowSums(length_exons_assembly_intergenic_intronic, na.rm = T) < 200)
 index_length_lessThan_200
@@ -522,9 +525,9 @@ total <- rbind(length_lincRNA,length_known_genes); head(total)
 p <- ggplot(data = total, aes(x = length,fill = type)) + 
   geom_density(aes(alpha = 0.8)) + theme_classic() + 
   scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
-  geom_vline(xintercept=c(1695,3264),linetype="dashed") +
+  geom_vline(xintercept=c(1967,3264),linetype="dashed") +
   theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
-  labs(x = 'Transcripts length', y = 'Density')
+  labs(x = 'Length of Transcript (in nt)', y = 'Density')
 p
 
 ########## Comparison of exon numbers of lncRNA(intergenic and intronic region) and protein_coding gene ###########
@@ -539,9 +542,9 @@ known_plus_intergenic_intronic <- rbind(num_exons_2plus_200ntPlus, known_transcr
 head(known_plus_intergenic_intronic)
 ggplot(data = known_plus_intergenic_intronic, aes(x = exon_num, fill = type, colour = type)) + 
   geom_histogram(position = 'stack', alpha = 0.8,  binwidth = 1)  + scale_fill_brewer(palette = "Set1") +
-  theme_classic()+ xlim(0,40) + labs(x = 'Exon numbers', y = 'Counts of transcripts')+
+  theme_classic()+ xlim(0,80) + labs(x = 'Number of exons', y = 'Counts of transcripts')+
   theme(axis.title = element_text(size = 18), axis.text = element_text(size = 14)) +
-  scale_y_continuous(breaks = seq(0,6000,1000))
+  scale_y_continuous(breaks = seq(0,12000,2000))
 
 
 #=====================================================================================
@@ -559,7 +562,9 @@ sample <- read.csv('SampleGroup.csv', header = T, row.names = 1, colClasses = 'f
 ##################### Read in data (TPM) and data visualization ########################
 ## Load in count table based on TPM normalization (of all the 98528 transcripts)
 transcripts <- read.table('merge_tpm.txt', header = T, row.names = 1)
-intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt')
+
+setwd('/Users/mijiarui/RNA-seq/TACO_gtf_merge/total')
+intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt'); dim(intergenic_intronic)
 intergenic_intronic <- as.vector(as.matrix(intergenic_intronic))
 colnames(transcripts) <- paste("DCD002", c(492:511),"SQ", sep = "")
 head(transcripts); dim(transcripts)
@@ -570,15 +575,74 @@ dim(intergenic_intronic_transcript)
 
 ## Get rid of those with length less than 200
 intergenic_intronic_transcript_moreThan_200 <- intergenic_intronic_transcript[-index_length_lessThan_200,]
-head(intergenic_intronic_transcript_moreThan_200)
+head(intergenic_intronic_transcript_moreThan_200); dim(intergenic_intronic_transcript_moreThan_200)
 
 ## Get rid of those with exons less than 2
 exon_1 <- read.csv('exon_1_intergenic_intronic.csv', header = F)
+head(exon_1)
 intergenic_intronic_exon_highThan1_length_highThan_200 <- intergenic_intronic_transcript_moreThan_200[!row.names(intergenic_intronic_transcript_moreThan_200)  
                                                                                                       %in% exon_1$V1,]
 dim(intergenic_intronic_exon_highThan1_length_highThan_200)
 head(intergenic_intronic_exon_highThan1_length_highThan_200)
 
+### Compare the expression value of lncRNA (exons >=2, length >= 200nt) and known transcripts across samples
+library(scales)
+par(mar = c(8,5,3,3))
+exprs_intergenic_intronic <- as.data.frame(rowSums(intergenic_intronic_exon_highThan1_length_highThan_200))
+exprs_intergenic_intronic$type <- rep(x = 'intergenic & intronic', nrow(exprs_intergenic_intronic))
+mean(exprs_intergenic_intronic$exprs); median(exprs_intergenic_intronic$exprs)
+colnames(exprs_intergenic_intronic) <- c('exprs', 'type'); head(exprs_intergenic_intronic)
+
+exprs_known_transcripts <- as.data.frame(rowSums(transcripts[rownames(transcripts) %in% known_transcript_exon_num$ID,]))
+exprs_known_transcripts$type <- rep(x = 'known transcripts', nrow(exprs_known_transcripts))
+colnames(exprs_known_transcripts) <- c('exprs', 'type')
+mean(exprs_known_transcripts$exprs); median(exprs_known_transcripts$exprs)
+exprs_TPM <- rbind(exprs_intergenic_intronic,exprs_known_transcripts)
+
+p <- ggplot(data = exprs_TPM, aes(x = exprs,fill = type)) + 
+  geom_density(aes(alpha = 0.8)) + theme_classic() + 
+  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  geom_vline(xintercept=c(436,15),linetype="dashed") +
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
+  labs(x = 'Total Expression (in log-transformed TPM)', y = 'Density') + 
+  scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
+                labels = trans_format("log10", math_format(10^.x)), 
+                limits = c(10^(-5),10^5))
+
+p
+
+### Prepare the expression matrix and mean expressoin value of lncRNA for each type of cell, the result table
+### would be used for Circos plot 
+beta_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200[,2:6]))
+beta_mean$id <- rownames(beta_mean); colnames(beta_mean)[1] <- 'exprs'
+head(beta_mean);dim(beta_mean)
+alpha_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200[,7:11]))
+alpha_mean$id <- rownames(alpha_mean); colnames(alpha_mean)[1] <- 'exprs'
+head(alpha_mean);dim(alpha_mean)
+delta_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200[,12:15]))
+delta_mean$id <- rownames(delta_mean); colnames(delta_mean)[1] <- 'exprs'
+head(delta_mean);dim(delta_mean)
+acinal_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200[,c(1,16:20)]))
+acinal_mean$id <- rownames(acinal_mean); colnames(acinal_mean)[1] <- 'exprs'
+head(acinal_mean); dim(acinal_mean)
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/circos')
+coordinate <- read.table('assembly_coordinate_id.txt', header = F, sep = ' ', quote = "", stringsAsFactors = F)
+colnames(coordinate) <- c('chr', 'start', 'end', 'id')
+head(coordinate); dim(coordinate)
+head(acinal_mean)
+head(beta_mean)
+library(dplyr)
+b <- left_join(beta_mean, coordinate, by = 'id')
+write.table(x = b[,c(3:5,1,2)], file = 'beta_lincRNA.txt', sep = '\t', quote = F, row.names = F)
+
+a <- left_join(alpha_mean, coordinate, by = 'id')
+write.table(x = a[,c(3:5,1,2)], file = 'alpha_lincRNA.txt', sep = '\t', quote = F, row.names = F)
+
+d <- left_join(delta_mean, coordinate, by = 'id')
+write.table(x = d[,c(3:5,1,2)], file = 'delta_lincRNA.txt', sep = '\t', quote = F, row.names = F)
+
+ac <- left_join(acinal_mean, coordinate, by = 'id')
+write.table(x = ac[,c(3:5,1,2)], file = 'acinal_lincRNA.txt', sep = '\t', quote = F, row.names = F)
 
 ### Here we got the final expression matrix of TPM of intergenic and intronic regions of transcripts with >= 2 exons and length higher than 200bp
 ### the expression matrix is store in the object of 'intergenic_intronic_exon_highThan1_length_highThan_200'
@@ -645,6 +709,16 @@ names(datExpr1)[21] <- 'log2_mean';names(datExpr1)[22] <- 'log2_CV'; names(datEx
 head(datExpr1)[21]; head(datExpr1[22]); colnames(datExpr1)
 
 ### Use loess model to fit the curve in order to select the highly variable genes
+#### Use loess regression to fit the model
+model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0.2, method = 'loess')
+summary(model_xlog2mean_ylog2CV)
+#### Use prediction to predict the y value (log2_CV) for each x (log2_mean)
+prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
+str(prediction)
+head(prediction$fit)  ## get the y value (log2_CV) point prediction
+
+
+
 #### Plotting the regression line and label the highly variable genes based on certain threshold (though subjective)
 p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV), col = 'black')+ geom_point() + 
   geom_smooth(span = 0.2, method = 'loess', na.rm = T) + 
@@ -680,16 +754,10 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
              col= 'black', 
              nudge_x = 0.3,nudge_y = 0.05, fill = 'green'); p
 
-#### Use loess regression to fit the model
-model_xlog2mean_ylog2CV <- loess(datExpr1$log2_CV ~ datExpr1$log2_mean, span = 0.2, method = 'loess')
-summary(model_xlog2mean_ylog2CV)
-#### Use prediction to predict the y value (log2_CV) for each x (log2_mean)
-prediction <- predict(object = model_xlog2mean_ylog2CV, data.frame(datExpr1$log2_mean), se = T)
-str(prediction)
-head(prediction$fit)  ## get the y value (log2_CV) point prediction
+
 #### Further filtering according to the predicted y value point prediction
 datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit  & datExpr1$log2_mean > 1,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
-head(datExpr0)
+head(datExpr0);dim(datExpr0)
 
 filtered_TPM_normalized_counts <- datExpr0
 head(filtered_TPM_normalized_counts)
@@ -1630,9 +1698,12 @@ setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_dat
 ## Load in sample data
 sample <- read.csv('SampleGroup.csv', header = T, row.names = 1, colClasses = 'factor')
 
-##################### Read in data (TPM) and data visualization ########################
+##################### Read in data (NumReads) and data visualization ########################
 ## Load in count table based on TPM normalization (of all the 98528 transcripts)
 transcripts <- read.table('merge_expr.txt', header = T, row.names = 1)
+
+
+setwd('/Users/mijiarui/RNA-seq/TACO_gtf_merge/total')
 intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt')
 intergenic_intronic <- as.vector(as.matrix(intergenic_intronic))
 colnames(transcripts) <- paste("DCD002", c(492:511),"SQ", sep = "")
@@ -2119,17 +2190,20 @@ write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter
 ######### Heatmap of differential expressed lincRNA ###########
 setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
 library(pheatmap)
-e <- read.table('differential_exprs_lincRNA_alphaBetaDelta.txt', header = T, sep = '\t', quote = "", stringsAsFactors = F)
+significant <- c(a,b,d)
+#e <- read.table('differential_exprs_lincRNA_alphaBetaDelta.txt', header = T, sep = '\t', quote = "", stringsAsFactors = F)
 #### according to normalized_counts
-dge <- normalized_counts[rownames(normalized_counts) %in% e$transcript_ID, c(7:11,2:6,12:15)]
+#dge <- normalized_counts[rownames(normalized_counts) %in% e$transcript_ID, c(7:11,2:6,12:15)]
+dge <- normalized_counts[rownames(normalized_counts) %in% significant, c(7:11,2:6,12:15)]
 pheatmap(dge, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50), 
          cluster_rows = T, scale = 'row', cluster_cols = T, annotation_col = sample, 
          cutree_rows = 3)
 #### according to TPM
-dge1 <- transcripts[rownames(transcripts) %in% e$transcript_ID, c(7:11,2:6,12:15)]
-pheatmap(dge1, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50), 
-         cluster_rows = T, scale = 'row', cluster_cols = T, annotation_col = sample, 
-         cutree_rows = 3)
+#dge1 <- transcripts[rownames(transcripts) %in% e$transcript_ID, c(7:11,2:6,12:15)]
+#dge1 <- transcripts[rownames(transcripts) %in% significant, c(7:11,2:6,12:15)]
+#pheatmap(dge1, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50), 
+     #    cluster_rows = T, scale = 'row', cluster_cols = T, annotation_col = sample, 
+      #   cutree_rows = 3)
 write.table(x = dge, file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/dge.txt', sep = '\t', quote = F)
 write.table(x = dge1, file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/dge1.txt', sep = '\t', quote = F)
 ##### Here, we can see that the expression matrix of potential lincRNAs in the corresponding samples
@@ -2145,34 +2219,70 @@ dge1 <- read.table('/Users/mijiarui/R_bioinformatics_project/Master_thesis_proje
 head(yellow)
 head(dge)
 head(dge1)
-a <- rbind(dge1, yellow)
+a <- rbind(dge, yellow)
 pearson_cor <- as.matrix(cor(t(a), method = 'pearson'))
-head(pearson_cor)
-hc <- hcluster(t(a), method="pearson")
-hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
-heatmap.2(pearson_cor, trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
+#head(pearson_cor)
+#hc <- hcluster(t(a), method="pearson")
+#hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
+#heatmap.2(pearson_cor, trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
 pheatmap(pearson_cor)
 dim(e)
 dim(yellow)
 
 ?cor.test
 
+
+### for yellow module (beta cell, hub gene with differential expressed lincRNA candidates)
 yell <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_EDA/yell.txt',
                      header = T, sep = '\t', quote = "")
-head(yell)
-head(dge)
 a <- rbind(dge1, yell)
 pearson_cor <- as.matrix(cor(t(a), method = 'pearson'))
-head(pearson_cor)
-hc <- hcluster(t(a), method="pearson")
-hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
-heatmap.2(pearson_cor, trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
 library(pheatmap)
 pheatmap(pearson_cor)
-dim(e)
-dim(yellow)
-dim(yell)
-dim(dge)
+
+mart <- useMart('ensembl')
+ensembl <- useDataset('drerio_gene_ensembl', mart)
+listFilters(ensembl)
+beta_genes <- getBM(attribute=c('ensembl_gene_id', 'entrezgene','zfin_id_symbol'),
+                    filters = 'ensembl_gene_id', values= rownames(yell), mart = ensembl)
+beta_genes <- beta_genes[!is.na(beta_genes$entrezgene),]
+
+#for (i in 1:nrow(yell)){
+  #for (j in 1:nrow(beta_genes)){
+ # if (rownames(yell)[i] == beta_genes$ensembl_gene_id[j]) {
+  #  yell$id[i] <- beta_genes$zfin_id_symbol[j]
+ # }
+ # }
+#}
+#View(yell); dim(yell); 
+#table(is.na(yell$id))
+#row.names(yell) <- yell$id
+
+
+### for blue module (alpha cell, hub gene with differential expressed lincRNA candidates)
+blue <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_EDA/blue.txt',
+                   header = T, sep = '\t', quote = "")
+a <- rbind(dge1, blue)
+pearson_cor <- as.matrix(cor(t(a), method = 'pearson'))
+pheatmap(pearson_cor)
+alpha_genes <- getBM(attribute=c('ensembl_gene_id', 'entrezgene','zfin_id_symbol'),
+                    filters = 'ensembl_gene_id', values= rownames(blue), mart = ensembl)
+alpha_genes <- alpha_genes[!is.na(alpha_genes$entrezgene),]
+alpha_genes$zfin_id_symbol
+### for turquoise module (delta cell, hub gene with differential expressed lincRNA candidates)
+turquoise <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_EDA/turquoise.txt',
+                   header = T, sep = '\t', quote = "")
+a <- rbind(dge1, turquoise)
+pearson_cor <- as.matrix(cor(t(a), method = 'pearson'))
+pheatmap(pearson_cor)
+
+
+delta_genes <- getBM(attribute=c('ensembl_gene_id', 'entrezgene','zfin_id_symbol'),
+                     filters = 'ensembl_gene_id', values= rownames(turquoise), mart = ensembl)
+delta_genes <- delta_genes[!is.na(delta_genes$entrezgene),]
+delta_genes$zfin_id_symbol
+
+
 
 b <- c()
 d
