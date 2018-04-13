@@ -1888,7 +1888,7 @@ res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
 res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
-signifiant_genes_beta_vs_alpha <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
+signifiant_genes_beta_vs_alpha <- row.names(subset(res, padj < 0.01 & res$log2FoldChange > 1 ))
 
 length(signifiant_genes_beta_vs_alpha)
 
@@ -1927,7 +1927,7 @@ res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
 res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
-signifiant_genes_beta_vs_delta <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
+signifiant_genes_beta_vs_delta <- row.names(subset(res, padj < 0.01 & res$log2FoldChange > 1))
 
 length(signifiant_genes_beta_vs_delta)
 
@@ -1939,17 +1939,18 @@ length(b)
 #### the coordinate of differential expressed lncRNAs for beta-cell
 b_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% b,]
 b_coordinate
+beta_coordinate <- b_coordinate
 
 library(biomaRt)
 mart <- useMart('ensembl')
 ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
 for (i in 1:nrow(b_coordinate)){
                              b_coordinate$flanking[i] <- getBM(attributes = 'entrezgene', filters = c('chromosome_name','start','end'),
-                             values= list(b_coordinate$chr[i],b_coordinate$start[i]-500000,b_coordinate$end[i]+500000), 
+                             values= list(b_coordinate$chr[i],b_coordinate$start[i]-100000,b_coordinate$end[i]+100000), 
                              mart=ensembl)
 }
 entrez <- as.vector(unlist(b_coordinate$flanking))
-GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.05,
+GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.2,
                pAdjustMethod = 'BH',qvalueCutoff = 0.2,ont = 'BP', readable = readable)
 GO
 dotplot(GO)
@@ -1959,11 +1960,10 @@ cnetplot(GO)
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
 library('dplyr')
-setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
-test_beta_coordinate <- read.table('significant_expressed_genes_beta_vs_alphaDelta.txt', header = T, quote = "", sep = '\t', stringsAsFactors = F)
-promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -750, End = start + 250)[, c(1,5,6,4)]
+test_beta_coordinate <- beta_coordinate
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -500, End = start)[, c(1,5,6,4)]
 promoter_left_strand
-promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end - 250, End = end + 750)[,c(1,5,6,4)]
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end, End = end + 500 )[,c(1,5,6,4)]
 promoter_right_strand
 
 ######
@@ -1999,7 +1999,7 @@ for (i in 1:nrow(promoter)){## here we found that the 'chr' does not have 'chr' 
 }
 promoter <- data.frame(transcript_ID = promoter$transcript_ID, chr = promoter$Chr, promoter[,2:3], strand = promoter$strand) 
 head(promoter); dim(promoter)
-promoter
+promoter; class(promoter)
 write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter_significant_beta_vs_alphaDelta_lincRNA.txt', 
             sep = '\t', row.names = F, col.names = F, quote = F)
 
@@ -2050,7 +2050,7 @@ res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
 
-signifiant_genes_alpha_vs_beta <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
+signifiant_genes_alpha_vs_beta <- row.names(subset(res, padj < 0.01 & res$log2FoldChange > 2))
 
 length(signifiant_genes_alpha_vs_beta)
 
@@ -2092,7 +2092,7 @@ res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
 
-signifiant_genes_alpha_vs_delta <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
+signifiant_genes_alpha_vs_delta <- row.names(subset(res, padj < 0.01 & res$log2FoldChange > 2 ))
 
 length(signifiant_genes_alpha_vs_delta)
 
@@ -2103,18 +2103,18 @@ a <- signifiant_genes_alpha_vs_delta[signifiant_genes_alpha_vs_delta %in% signif
 length(a)
 #### the coordinate of differential expressed lncRNA in alpha-cells
 a_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% a,]
-a_coordinate
+alpha_coordinate <- a_coordinate
 
 
 mart <- useMart('ensembl')
 ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
 for (i in 1:nrow(a_coordinate)){
   a_coordinate$flanking[i] <- getBM(attributes = 'entrezgene', filters = c('chromosome_name','start','end'),
-                                    values= list(a_coordinate$chr[i],a_coordinate$start[i]-1000000,a_coordinate$end[i]+1000000), 
+                                    values= list(a_coordinate$chr[i],a_coordinate$start[i]-100000,a_coordinate$end[i]+100000), 
                                     mart=ensembl)
 }
 entrez <- as.vector(unlist(a_coordinate$flanking))
-GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.1,
+GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.2,
                pAdjustMethod = 'BH',qvalueCutoff = 0.2,ont = 'BP', readable = readable)
 GO
 dotplot(GO)
@@ -2123,12 +2123,10 @@ cnetplot(GO)
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
-library('dplyr')
-setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
-test_beta_coordinate <- read.table('significant_expressed_alpha_vs_betaDelta.txt', header = T, quote = "", sep = '\t', stringsAsFactors = F)
-promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -750, End = start + 250)[, c(1,5,6,4)]
+test_beta_coordinate <- alpha_coordinate; dim(test_beta_coordinate)
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -500, End = start)[, c(1,5,6,4)]
 promoter_left_strand
-promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end - 250, End = end + 750)[,c(1,5,6,4)]
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end , End = end + 500)[,c(1,5,6,4)]
 promoter_right_strand
 
 
@@ -2213,7 +2211,7 @@ res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
 
-signifiant_genes_delta_vs_beta <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
+signifiant_genes_delta_vs_beta <- row.names(subset(res, padj < 0.01 & res$log2FoldChange > 1))
 
 length(signifiant_genes_delta_vs_beta)
 
@@ -2256,7 +2254,7 @@ res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
 
-signifiant_genes_delta_vs_alpha <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
+signifiant_genes_delta_vs_alpha <- row.names(subset(res, padj < 0.01 & res$log2FoldChange > 1 ))
 
 length(signifiant_genes_delta_vs_alpha)
 
@@ -2268,31 +2266,29 @@ length(d)
 #### the coordinate of differential expressed lncRNA in delta-cell
 d_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% d,]
 d_coordinate; nrow(d_coordinate)
+delta_coordinate <- d_coordinate
 
 mart <- useMart('ensembl')
 ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
 for (i in 1:nrow(d_coordinate)){
   d_coordinate$flanking[i] <- getBM(attributes = 'entrezgene', filters = c('chromosome_name','start','end'),
-                                    values= list(d_coordinate$chr[i],d_coordinate$start[i]-200000,d_coordinate$end[i]+200000), 
+                                    values= list(d_coordinate$chr[i],d_coordinate$start[i]-300000,d_coordinate$end[i]+300000), 
                                     mart=ensembl)
 }
-entrez <- as.vector(unlist(d_coordinate$flanking))
-GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.1,
+entrez <- unique(as.vector(unlist(d_coordinate$flanking)))
+GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.2,
                pAdjustMethod = 'BH',qvalueCutoff = 0.2,ont = 'BP', readable = readable)
 GO
 dotplot(GO)
 cnetplot(GO)
 
-
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
-library('dplyr')
-setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
-test_beta_coordinate <- read.table('significant_expressed_delta_vs_alphaBeta.txt', header = T, quote = "", sep = '\t', stringsAsFactors = F)
-promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -750, End = start + 250)[, c(1,5,6,4)]
+test_beta_coordinate <- delta_coordinate
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -500, End = start )[, c(1,5,6,4)]
 promoter_left_strand
-promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end - 250, End = end + 750)[,c(1,5,6,4)]
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end , End = end + 500)[,c(1,5,6,4)]
 promoter_right_strand
 
 
@@ -2346,7 +2342,7 @@ significant <- c(a,b,d)
 #dge <- normalized_counts[rownames(normalized_counts) %in% e$transcript_ID, c(7:11,2:6,12:15)]
 dge <- normalized_counts[rownames(normalized_counts) %in% significant, c(7:11,2:6,12:15)]
 pheatmap(dge, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50), 
-         cluster_rows = T, scale = 'row', cluster_cols = T, annotation_col = sample, 
+         cluster_rows = T , scale = 'row', cluster_cols = F, annotation_col = sample, 
          cutree_rows = 3)
 #### according to TPM
 #dge1 <- transcripts[rownames(transcripts) %in% e$transcript_ID, c(7:11,2:6,12:15)]
@@ -2366,7 +2362,7 @@ yellow <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_the
                      header = T, sep = '\t', quote = "")
 dge <- read.table('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/dge.txt', header = T, quote = "", sep = '\t', stringsAsFactors = F)
 dge1 <- read.table('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/dge1.txt', header = T, quote = "", sep = '\t', stringsAsFactors = F)
-head(yellow)
+head(yellow); dim(yellow)
 head(dge)
 head(dge1)
 a <- rbind(dge, yellow)
@@ -2385,7 +2381,8 @@ dim(yellow)
 ### for yellow module (beta cell, hub gene with differential expressed lincRNA candidates)
 yell <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_EDA/yell.txt',
                      header = T, sep = '\t', quote = "")
-a <- rbind(dge1, yell)
+dim(yell)
+a <- rbind(dge, yell)
 pearson_cor <- as.matrix(cor(t(a), method = 'pearson'))
 library(pheatmap)
 pheatmap(pearson_cor)
