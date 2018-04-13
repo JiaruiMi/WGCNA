@@ -1939,6 +1939,22 @@ length(b)
 #### the coordinate of differential expressed lncRNAs for beta-cell
 b_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% b,]
 b_coordinate
+
+library(biomaRt)
+mart <- useMart('ensembl')
+ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
+for (i in 1:nrow(b_coordinate)){
+                             b_coordinate$flanking[i] <- getBM(attributes = 'entrezgene', filters = c('chromosome_name','start','end'),
+                             values= list(b_coordinate$chr[i],b_coordinate$start[i]-500000,b_coordinate$end[i]+500000), 
+                             mart=ensembl)
+}
+entrez <- as.vector(unlist(b_coordinate$flanking))
+GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.05,
+               pAdjustMethod = 'BH',qvalueCutoff = 0.2,ont = 'BP', readable = readable)
+GO
+dotplot(GO)
+cnetplot(GO)
+
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
@@ -2088,6 +2104,22 @@ length(a)
 #### the coordinate of differential expressed lncRNA in alpha-cells
 a_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% a,]
 a_coordinate
+
+
+mart <- useMart('ensembl')
+ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
+for (i in 1:nrow(a_coordinate)){
+  a_coordinate$flanking[i] <- getBM(attributes = 'entrezgene', filters = c('chromosome_name','start','end'),
+                                    values= list(a_coordinate$chr[i],a_coordinate$start[i]-1000000,a_coordinate$end[i]+1000000), 
+                                    mart=ensembl)
+}
+entrez <- as.vector(unlist(a_coordinate$flanking))
+GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.1,
+               pAdjustMethod = 'BH',qvalueCutoff = 0.2,ont = 'BP', readable = readable)
+GO
+dotplot(GO)
+cnetplot(GO)
+
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
@@ -2235,7 +2267,23 @@ d <- signifiant_genes_delta_vs_beta[signifiant_genes_delta_vs_beta %in% signifia
 length(d)
 #### the coordinate of differential expressed lncRNA in delta-cell
 d_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% d,]
-d_coordinate
+d_coordinate; nrow(d_coordinate)
+
+mart <- useMart('ensembl')
+ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
+for (i in 1:nrow(d_coordinate)){
+  d_coordinate$flanking[i] <- getBM(attributes = 'entrezgene', filters = c('chromosome_name','start','end'),
+                                    values= list(d_coordinate$chr[i],d_coordinate$start[i]-200000,d_coordinate$end[i]+200000), 
+                                    mart=ensembl)
+}
+entrez <- as.vector(unlist(d_coordinate$flanking))
+GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.1,
+               pAdjustMethod = 'BH',qvalueCutoff = 0.2,ont = 'BP', readable = readable)
+GO
+dotplot(GO)
+cnetplot(GO)
+
+
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
