@@ -456,7 +456,7 @@ table(rowSums(length_exons_2plus, na.rm = T) < 200)
 which(rowSums(length_exons_2plus, na.rm = T) < 200)
 length_exons_2plus_length_highThan200 <- length_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]
 dim(length_exons_2plus_length_highThan200)
-#### In transcripts with exons >= 2 (5600), transcripts with length < 200 = 7, >= 200 is 5593
+#### In transcripts with exons >= 2 (5600/10835), transcripts with length < 200 = 7/8, >= 200 is 5593/10827
 #### Select the transcriptes with exons >= 2 and length >200 (TU_id and exon_number information)
 num_exons_2plus_200ntPlus <- num_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]
 num_exons_2plus_200ntPlus <- as.data.frame(num_exons_2plus_200ntPlus)
@@ -468,6 +468,13 @@ dim(num_exons_2plus_200ntPlus); head(num_exons_2plus_200ntPlus)
 ### Check the length (mean, median, min and max) of the transcripts with exon >=2 and length >200nt
 summary(rowSums(length_exons_2plus[rowSums(length_exons_2plus, na.rm = T) >= 200,], na.rm = T)) # length summary
 summary(num_exons_2plus[which(rowSums(length_exons_2plus, na.rm = T) >= 200),]) # exon number summary
+
+#==============================================================================
+#    Transcripts after PLEK and CPAT prediction
+#==============================================================================
+
+
+
 
 
 #==============================================================================
@@ -492,6 +499,9 @@ index_length_lessThan_200
 summary(rowSums(length_exons_assembly_intergenic_intronic[rowSums(length_exons_assembly_intergenic_intronic, na.rm = T) >= 200,], na.rm = T)) # length summary
 summary(num_exons_inter_intro [which(rowSums(length_exons_assembly_intergenic_intronic, na.rm = T) >= 200),]) # exon number summary
 
+
+
+
 #==============================================================================
 #              Known transcripts and their exon numbers
 #==============================================================================
@@ -511,6 +521,47 @@ summary(rowSums(length_exons_knownGene, na.rm = T))
 
 #### So, now we have the length of both intergenic_intronic (potential lincRNAs) and known transcripts
 #### The two objects store the length information are "length_exons_2plus_length_highThan200" and "length_lincRNA"
+#### Next we add another information, that is the transcripts successfully predicted as lncRNAs by both CPAT and PLEK
+### In the "noncoding_intersect" object are the ones that are predicted as non-coding genes by both CPAT and PLEK
+
+setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA')
+##################### Read in data (SampleGroup) ########################
+## Load in sample data
+sample <- read.csv('SampleGroup.csv', header = T, row.names = 1, colClasses = 'factor')
+##################### Read in data (TPM) and data visualization ########################
+## Load in count table based on TPM normalization (of all the 98528 transcripts)
+transcripts <- read.table('merge_tpm.txt', header = T, row.names = 1)
+setwd('/Users/mijiarui/RNA-seq/TACO_gtf_merge/total')
+intergenic_intronic <- read.table('transcript_intergenic_intronic_bedtools.txt'); dim(intergenic_intronic)
+intergenic_intronic <- as.vector(as.matrix(intergenic_intronic))
+colnames(transcripts) <- paste("DCD002", c(492:511),"SQ", sep = "")
+head(transcripts); dim(transcripts)
+
+## Choose the one in the intergenic and intronic regions
+intergenic_intronic_transcript <- transcripts[row.names(transcripts) %in% intergenic_intronic,]
+dim(intergenic_intronic_transcript)
+
+## Get rid of those with length less than 200
+intergenic_intronic_transcript_moreThan_200 <- intergenic_intronic_transcript[-index_length_lessThan_200,]
+head(intergenic_intronic_transcript_moreThan_200); dim(intergenic_intronic_transcript_moreThan_200)
+
+## Get rid of those with exons less than 2
+exon_1 <- read.csv('exon_1_intergenic_intronic.csv', header = F)
+head(exon_1)
+intergenic_intronic_exon_highThan1_length_highThan_200 <- intergenic_intronic_transcript_moreThan_200[!row.names(intergenic_intronic_transcript_moreThan_200)  
+                                                                                                      %in% exon_1$V1,]
+dim(intergenic_intronic_exon_highThan1_length_highThan_200)
+head(intergenic_intronic_exon_highThan1_length_highThan_200)
+### Get the transcripts that are predicted as non-coding genes by both CPAT and PLEK
+noncoding_intersect <- read.table(file = '/Users/mijiarui/RNA-seq/TACO_gtf_merge/total/noncoding_intersect.txt',
+                                  header = T, sep = '\t', stringsAsFactors = F, quote = "")
+head(noncoding_intersect)
+intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction <- intergenic_intronic_exon_highThan1_length_highThan_200[rownames(intergenic_intronic_exon_highThan1_length_highThan_200) %in% noncoding_intersect$ID,]
+head(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction)
+dim(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction)
+
+
+
 length_known_genes <- as.data.frame(as.matrix(rowSums(length_exons_knownGene, na.rm = T)))
 head(length_known_genes); dim(length_known_genes)
 length_known_genes$type <- rep('protein-coding', nrow(length_known_genes))
@@ -521,13 +572,15 @@ length_lincRNA <- as.data.frame(as.matrix(rowSums(length_exons_2plus_length_high
 length_lincRNA$type <- rep('integenic & intronic', nrow(length_lincRNA ))
 colnames(length_lincRNA) <- c('length','type')
 head(length_lincRNA); dim(length_lincRNA)
-total <- rbind(length_lincRNA,length_known_genes); head(total)
+total <- rbind(length_lincRNA[which(rownames(intergenic_intronic_exon_highThan1_length_highThan_200) %in% noncoding_intersect$ID),],length_known_genes); head(total)
 p <- ggplot(data = total, aes(x = length,fill = type)) + 
   geom_density(aes(alpha = 0.8)) + theme_classic() + 
-  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
+  scale_fill_manual(values=c("#999999", "#E69F00")) +
   geom_vline(xintercept=c(1967,3264),linetype="dashed") +
   theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
-  labs(x = 'Length of Transcript (in nt)', y = 'Density')
+  labs(x = 'Length of Transcript (in nt)', y = 'Density')+
+  annotate(geom = 'text', x = 25000, y = c(4*10^(-4),3.5*10^(-4)), 
+           label = c('intergenic & intronic','protein-coding'), col = c("#999999","#E69F00"))
 p
 
 ########## Comparison of exon numbers of lncRNA(intergenic and intronic region) and protein_coding gene ###########
@@ -538,13 +591,15 @@ ggplot(data = known_transcript_exon_num, aes(x = exon_num)) + geom_density(bins 
 ggplot(data = num_exons_2plus_200ntPlus, aes(x = exon_num)) + geom_histogram(bins = 35)+ theme_classic()
 ggplot(data = num_exons_2plus_200ntPlus, aes(x = exon_num)) + geom_density()+ theme_classic()+ xlim(0,20)
 ### Third, let's merge the data together and check again
-known_plus_intergenic_intronic <- rbind(num_exons_2plus_200ntPlus, known_transcript_exon_num[,2:3])
+known_plus_intergenic_intronic <- rbind(num_exons_2plus_200ntPlus[which(rownames(intergenic_intronic_exon_highThan1_length_highThan_200) %in% noncoding_intersect$ID),], known_transcript_exon_num[,2:3])
 head(known_plus_intergenic_intronic)
 ggplot(data = known_plus_intergenic_intronic, aes(x = exon_num, fill = type, colour = type)) + 
   geom_histogram(position = 'stack', alpha = 0.8,  binwidth = 1)  + scale_fill_brewer(palette = "Set1") +
   theme_classic()+ xlim(0,80) + labs(x = 'Number of exons', y = 'Counts of transcripts')+
   theme(axis.title = element_text(size = 18), axis.text = element_text(size = 14)) +
-  scale_y_continuous(breaks = seq(0,12000,2000))
+  scale_y_continuous(breaks = seq(0,8000,2000)) +
+  annotate(geom = 'text', x = 65, y = c(7500,7000), 
+           label = c('intergenic & intronic','protein-coding'), col = c("#E40B49","#00bfff"))
 
 
 #=====================================================================================
@@ -585,15 +640,24 @@ intergenic_intronic_exon_highThan1_length_highThan_200 <- intergenic_intronic_tr
 dim(intergenic_intronic_exon_highThan1_length_highThan_200)
 head(intergenic_intronic_exon_highThan1_length_highThan_200)
 
+### In the "noncoding_intersect" object are the ones that are predicted as non-coding genes by both CPAT and PLEK
+noncoding_intersect <- read.table(file = '/Users/mijiarui/RNA-seq/TACO_gtf_merge/total/noncoding_intersect.txt',
+                                  header = T, sep = '\t', stringsAsFactors = F, quote = "")
+head(noncoding_intersect)
+intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction <- intergenic_intronic_exon_highThan1_length_highThan_200[rownames(intergenic_intronic_exon_highThan1_length_highThan_200) %in% noncoding_intersect$ID,]
+head(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction)
+dim(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction)
+
 ### Compare the expression value of lncRNA (exons >=2, length >= 200nt) and known transcripts across samples
 library(scales)
 par(mar = c(8,5,3,3))
-exprs_intergenic_intronic <- as.data.frame(rowSums(intergenic_intronic_exon_highThan1_length_highThan_200))
+exprs_intergenic_intronic <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction))
+# exprs_intergenic_intronic <- as.data.frame(rowSums(intergenic_intronic_exon_highThan1_length_highThan_200))
 exprs_intergenic_intronic$type <- rep(x = 'intergenic & intronic', nrow(exprs_intergenic_intronic))
 mean(exprs_intergenic_intronic$exprs); median(exprs_intergenic_intronic$exprs)
 colnames(exprs_intergenic_intronic) <- c('exprs', 'type'); head(exprs_intergenic_intronic)
 
-exprs_known_transcripts <- as.data.frame(rowSums(transcripts[rownames(transcripts) %in% known_transcript_exon_num$ID,]))
+exprs_known_transcripts <- as.data.frame(rowMeans(transcripts[rownames(transcripts) %in% known_transcript_exon_num$ID,]))
 exprs_known_transcripts$type <- rep(x = 'known transcripts', nrow(exprs_known_transcripts))
 colnames(exprs_known_transcripts) <- c('exprs', 'type')
 mean(exprs_known_transcripts$exprs); median(exprs_known_transcripts$exprs)
@@ -601,28 +665,29 @@ exprs_TPM <- rbind(exprs_intergenic_intronic,exprs_known_transcripts)
 
 p <- ggplot(data = exprs_TPM, aes(x = exprs,fill = type)) + 
   geom_density(aes(alpha = 0.8)) + theme_classic() + 
-  scale_fill_manual(values=c("#999999", "#E69F00", "#56B4E9")) +
-  geom_vline(xintercept=c(436,15),linetype="dashed") +
+  scale_fill_manual(values=c("#999999", "#E69F00")) +
+  geom_vline(xintercept=c(21,0.7),linetype="dashed") +
   theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
   labs(x = 'Total Expression (in log-transformed TPM)', y = 'Density') + 
   scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
                 labels = trans_format("log10", math_format(10^.x)), 
-                limits = c(10^(-5),10^5))
+                limits = c(10^(-5),10^5)) +
+  annotate("text", x = 4.5*10^-4, y = c(0.7,0.65), label = c('predicted lncRNA: mean = 0.7', 'protein-coding: mean = 21'), col = c("#999999", "#E69F00"), size = 3)
 
 p
 
 ### Prepare the expression matrix and mean expressoin value of lncRNA for each type of cell, the result table
 ### would be used for Circos plot 
-beta_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200[,2:6]))
+beta_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction[,2:6]))
 beta_mean$id <- rownames(beta_mean); colnames(beta_mean)[1] <- 'exprs'
 head(beta_mean);dim(beta_mean)
-alpha_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200[,7:11]))
+alpha_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction[,7:11]))
 alpha_mean$id <- rownames(alpha_mean); colnames(alpha_mean)[1] <- 'exprs'
 head(alpha_mean);dim(alpha_mean)
-delta_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200[,12:15]))
+delta_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction[,12:15]))
 delta_mean$id <- rownames(delta_mean); colnames(delta_mean)[1] <- 'exprs'
 head(delta_mean);dim(delta_mean)
-acinal_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200[,c(1,16:20)]))
+acinal_mean <- as.data.frame(rowMeans(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction[,c(1,16:20)]))
 acinal_mean$id <- rownames(acinal_mean); colnames(acinal_mean)[1] <- 'exprs'
 head(acinal_mean); dim(acinal_mean)
 setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/circos')
@@ -646,8 +711,31 @@ write.table(x = ac[,c(3:5,1,2)], file = 'acinal_lincRNA.txt', sep = '\t', quote 
 
 ### Here we got the final expression matrix of TPM of intergenic and intronic regions of transcripts with >= 2 exons and length higher than 200bp
 ### the expression matrix is store in the object of 'intergenic_intronic_exon_highThan1_length_highThan_200'
-write.csv(x = intergenic_intronic_exon_highThan1_length_highThan_200, 
-          file = 'intergenic_intronic_exon_highThan1_length_highThan_200.csv', quote = F)
+write.csv(x = intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction, 
+          file = 'intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction.csv', quote = F)
+
+#==================================================================================
+#                            Pie chart
+#==================================================================================
+pie <- read.table('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_data/WGCNA/piechart_data.txt',
+                  header = T, sep = '\t', quote = "", stringsAsFactors = F)
+class(pie)
+pie <- ggplot(pie, aes(x="", y=frequency, fill=type))+
+  geom_bar(width = 1, stat = "identity")
+pie <- pie + coord_polar("y", start = 0)
+blank_theme <- theme_minimal()+
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    panel.border = element_blank(),
+    panel.grid=element_blank(),
+    axis.ticks = element_blank(),
+    plot.title=element_text(size=14, face="bold")
+  )
+library(scales)
+pie + scale_fill_brewer("blue") + blank_theme + theme(axis.text.x=element_blank())+
+  geom_text(aes(y = frequency/3 + c(0, cumsum(frequency)[-length(frequency)]), 
+                label = percent(frequency/100)), size=4)
 
 
 ############# STEP 1: Expression data and Phenotype data Preparation ##############
@@ -663,8 +751,8 @@ options(stringsAsFactors = F)
 # All you need to change is the expression matrix
 # data1  <- read.table('merge_tpm.txt', header = T, row.names = 1)
 # data1 <- normalized_counts
-data1 <- intergenic_intronic_exon_highThan1_length_highThan_200   # For TPM
-data1 <- read.csv('intergenic_intronic_exon_highThan1_length_highThan_200.csv', header = T, row.names = 1)
+data1 <- intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction   # For TPM
+data1 <- read.csv('intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction.csv', header = T, row.names = 1)
 dim(data1); head(data1)
 datExpr0 <- as.data.frame(t(data1)); dim(datExpr0)
 # After transpose, have a look at your data
@@ -785,6 +873,7 @@ ggbiplot(pca ,choices = 1:2, obs.scale = T,labels = NULL, var.scale = T,groups =
   theme(legend.direction = 'horizontal', legend.position = 'top')+theme_classic() +
   labs(x = "PC1 (42.2%)", y = "PC2 (13.8%)") +
   theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12))
+
 
 
 ###### Sample Cluster (样本聚类) ######
@@ -1724,10 +1813,17 @@ intergenic_intronic_exon_highThan1_length_highThan_200 <- intergenic_intronic_tr
 dim(intergenic_intronic_exon_highThan1_length_highThan_200)
 head(intergenic_intronic_exon_highThan1_length_highThan_200)
 
+### Get the transcripts that are predicted as non-coding genes by both CPAT and PLEK
+noncoding_intersect <- read.table(file = '/Users/mijiarui/RNA-seq/TACO_gtf_merge/total/noncoding_intersect.txt',
+                                  header = T, sep = '\t', stringsAsFactors = F, quote = "")
+head(noncoding_intersect)
+intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction <- intergenic_intronic_exon_highThan1_length_highThan_200[rownames(intergenic_intronic_exon_highThan1_length_highThan_200) %in% noncoding_intersect$ID,]
+head(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction)
+dim(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction)
 
 ############### Make DESeq object #############
 library(DESeq2)
-ddsFullCountTable <- DESeqDataSetFromMatrix(countData = round(intergenic_intronic_exon_highThan1_length_highThan_200), 
+ddsFullCountTable <- DESeqDataSetFromMatrix(countData = round(intergenic_intronic_exon_highThan1_length_highThan_200_afterPrediction), 
                                             colData = sample, design  = ~ celltype)
 
 ## Calculation and Normalization: get normalized_counts
@@ -1792,7 +1888,7 @@ res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
 res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
-signifiant_genes_beta_vs_alpha <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+signifiant_genes_beta_vs_alpha <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
 
 length(signifiant_genes_beta_vs_alpha)
 
@@ -1825,22 +1921,24 @@ res$significance <- (res$padj<0.05)
 
 
 #### Extract differential expressed gene
-res_de <- subset(res, res$padj<0.1, select=c('ID',sampleA,sampleC,'log2FoldChange','padj'))
+colnames(res)
+res_de <- subset(res, res$padj<0.1, select=c('ID',sampleA,sampleD,'log2FoldChange','padj'))
 res_de_up <- subset(res_de,res_de$log2FoldChange>=1)
 res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
-signifiant_genes_beta_vs_delta <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+signifiant_genes_beta_vs_delta <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
 
 length(signifiant_genes_beta_vs_delta)
 
 
 #### Pick up the lincRNAs that are differentially expressed in between beta-cell and alpha-cell and
 #### between beta-cell and delta-cell
-b<- signifiant_genes_beta_vs_delta[signifiant_genes_beta_vs_delta %in% signifiant_genes_beta_vs_alpha]
+b <- signifiant_genes_beta_vs_delta[signifiant_genes_beta_vs_delta %in% signifiant_genes_beta_vs_alpha]
 length(b)
-
-
+#### the coordinate of differential expressed lncRNAs for beta-cell
+b_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% b,]
+b_coordinate
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
@@ -1936,7 +2034,7 @@ res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
 
-signifiant_genes_alpha_vs_beta <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+signifiant_genes_alpha_vs_beta <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
 
 length(signifiant_genes_alpha_vs_beta)
 
@@ -1978,7 +2076,7 @@ res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
 
-signifiant_genes_alpha_vs_delta <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+signifiant_genes_alpha_vs_delta <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
 
 length(signifiant_genes_alpha_vs_delta)
 
@@ -1987,7 +2085,9 @@ length(signifiant_genes_alpha_vs_delta)
 #### between beta-cell and delta-cell
 a <- signifiant_genes_alpha_vs_delta[signifiant_genes_alpha_vs_delta %in% signifiant_genes_alpha_vs_beta]
 length(a)
-
+#### the coordinate of differential expressed lncRNA in alpha-cells
+a_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% a,]
+a_coordinate
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
@@ -2081,7 +2181,7 @@ res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
 
-signifiant_genes_delta_vs_beta <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+signifiant_genes_delta_vs_beta <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
 
 length(signifiant_genes_delta_vs_beta)
 
@@ -2124,7 +2224,7 @@ res_de_down <- subset(res_de,res_de$log2FoldChange<=-1)
 
 
 
-signifiant_genes_delta_vs_alpha <- row.names(subset(res, -log10(padj) > 2 & res$log2FoldChange > 1))
+signifiant_genes_delta_vs_alpha <- row.names(subset(res, padj < 0.02 & res$log2FoldChange > 1))
 
 length(signifiant_genes_delta_vs_alpha)
 
@@ -2133,7 +2233,9 @@ length(signifiant_genes_delta_vs_alpha)
 #### between beta-cell and delta-cell
 d <- signifiant_genes_delta_vs_beta[signifiant_genes_delta_vs_beta %in% signifiant_genes_delta_vs_alpha]
 length(d)
-
+#### the coordinate of differential expressed lncRNA in delta-cell
+d_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcript_ID %in% d,]
+d_coordinate
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
