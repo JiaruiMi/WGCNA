@@ -425,7 +425,7 @@ pv.out <- pathview(gene.data = geneList_foldchange_beta_with_acinal_2,pathway.id
 
 ############# STEP 0: Prepare your count table (TPM) for downstream analysis ##############
 ## set working directory
-setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lincRNA')
+# setwd('/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lincRNA')
 setwd('/Users/mijiarui/RNA-seq/TACO_gtf_merge/total')
 ## load packages for data visulizations
 library(ggplot2)
@@ -512,6 +512,7 @@ known_transcript_exon_num$type <- 'protein-coding'
 known_transcript_exon_num <- known_transcript_exon_num[,c(1,3,2)]
 head(known_transcript_exon_num)
 summary(known_transcript_exon_num$exon_num)
+nrow(known_transcript_exon_num)
 
 length_exons_knownGene <- read.csv('assembly.csv', header = F, quote = "", row.names = 1)
 length_exons_knownGene <- length_exons_knownGene[rownames(length_exons_knownGene) %in% known_transcript_exon_num$ID,]
@@ -574,13 +575,14 @@ colnames(length_lincRNA) <- c('length','type')
 head(length_lincRNA); dim(length_lincRNA)
 total <- rbind(length_lincRNA[which(rownames(intergenic_intronic_exon_highThan1_length_highThan_200) %in% noncoding_intersect$ID),],length_known_genes); head(total)
 p <- ggplot(data = total, aes(x = length,fill = type)) + 
-  geom_density(aes(alpha = 0.8)) + theme_classic() + 
+  geom_density(aes(alpha = 0.8), show.legend = F) + theme_classic() + 
   scale_fill_manual(values=c("#999999", "#E69F00")) +
   geom_vline(xintercept=c(1967,3264),linetype="dashed") +
   theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
   labs(x = 'Length of Transcript (in nt)', y = 'Density')+
-  annotate(geom = 'text', x = 25000, y = c(4*10^(-4),3.5*10^(-4)), 
-           label = c('intergenic & intronic','protein-coding'), col = c("#999999","#E69F00"))
+  xlim(c(0,25000))+
+  annotate(geom = 'text', x = 20000, y = c(6*10^(-4),5.5*10^(-4)), 
+           label = c('long noncoding RNAs','messenger RNAs'), col = c("#999999","#E69F00"), size = 5)
 p
 
 ########## Comparison of exon numbers of lncRNA(intergenic and intronic region) and protein_coding gene ###########
@@ -594,12 +596,12 @@ ggplot(data = num_exons_2plus_200ntPlus, aes(x = exon_num)) + geom_density()+ th
 known_plus_intergenic_intronic <- rbind(num_exons_2plus_200ntPlus[which(rownames(intergenic_intronic_exon_highThan1_length_highThan_200) %in% noncoding_intersect$ID),], known_transcript_exon_num[,2:3])
 head(known_plus_intergenic_intronic)
 ggplot(data = known_plus_intergenic_intronic, aes(x = exon_num, fill = type, colour = type)) + 
-  geom_histogram(position = 'stack', alpha = 0.8,  binwidth = 1)  + scale_fill_brewer(palette = "Set1") +
+  geom_histogram(position = 'stack', alpha = 0.8,  binwidth = 1, show.legend = F)  + scale_fill_brewer(palette = "Set1") +
   theme_classic()+ xlim(0,80) + labs(x = 'Number of exons', y = 'Counts of transcripts')+
   theme(axis.title = element_text(size = 18), axis.text = element_text(size = 14)) +
   scale_y_continuous(breaks = seq(0,8000,2000)) +
   annotate(geom = 'text', x = 65, y = c(7500,7000), 
-           label = c('intergenic & intronic','protein-coding'), col = c("#E40B49","#00bfff"))
+           label = c('long noncoding RNAs','messenger RNAs'), col = c("#E40B49","#00bfff"), size = 5)
 
 
 #=====================================================================================
@@ -664,7 +666,7 @@ mean(exprs_known_transcripts$exprs); median(exprs_known_transcripts$exprs)
 exprs_TPM <- rbind(exprs_intergenic_intronic,exprs_known_transcripts)
 
 p <- ggplot(data = exprs_TPM, aes(x = exprs,fill = type)) + 
-  geom_density(aes(alpha = 0.8)) + theme_classic() + 
+  geom_density(aes(alpha = 0.8), show.legend = F) + theme_classic() + 
   scale_fill_manual(values=c("#999999", "#E69F00")) +
   geom_vline(xintercept=c(21,0.7),linetype="dashed") +
   theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
@@ -672,7 +674,7 @@ p <- ggplot(data = exprs_TPM, aes(x = exprs,fill = type)) +
   scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
                 labels = trans_format("log10", math_format(10^.x)), 
                 limits = c(10^(-5),10^5)) +
-  annotate("text", x = 4.5*10^-4, y = c(0.7,0.65), label = c('predicted lncRNA: mean = 0.7', 'protein-coding: mean = 21'), col = c("#999999", "#E69F00"), size = 3)
+  annotate("text", x = 4.5*10^-4, y = c(0.7,0.65), label = c('long noncoding RNAs', 'messenger RNAs'), col = c("#999999", "#E69F00"), size = 5)
 
 p
 
