@@ -578,11 +578,11 @@ p <- ggplot(data = total, aes(x = length,fill = type)) +
   geom_density(aes(alpha = 0.8), show.legend = F) + theme_classic() + 
   scale_fill_manual(values=c("#999999", "#E69F00")) +
   geom_vline(xintercept=c(1967,3264),linetype="dashed") +
-  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
-  labs(x = 'Length of Transcript (in nt)', y = 'Density')+
-  xlim(c(0,25000))+
-  annotate(geom = 'text', x = 20000, y = c(6*10^(-4),5.5*10^(-4)), 
-           label = c('long noncoding RNAs','messenger RNAs'), col = c("#999999","#E69F00"), size = 5)
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16)) +
+  labs(x = 'Length of Transcript (in nt)', y = 'Frequency')+
+  xlim(c(0,25000))+ 
+  annotate(geom = 'text', x = 20000, y = c(5.5*10^(-4),5.2*10^(-4)), 
+           label = c('long noncoding RNAs','messenger RNAs'), col = c("#999999","#E69F00"), size = 6)
 p
 
 ########## Comparison of exon numbers of lncRNA(intergenic and intronic region) and protein_coding gene ###########
@@ -598,10 +598,10 @@ head(known_plus_intergenic_intronic)
 ggplot(data = known_plus_intergenic_intronic, aes(x = exon_num, fill = type, colour = type)) + 
   geom_histogram(position = 'stack', alpha = 0.8,  binwidth = 1, show.legend = F)  + scale_fill_brewer(palette = "Set1") +
   theme_classic()+ xlim(0,80) + labs(x = 'Number of exons', y = 'Counts of transcripts')+
-  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 14)) +
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16)) +
   scale_y_continuous(breaks = seq(0,8000,2000)) +
-  annotate(geom = 'text', x = 65, y = c(7500,7000), 
-           label = c('long noncoding RNAs','messenger RNAs'), col = c("#E40B49","#00bfff"), size = 5)
+  annotate(geom = 'text', x = 65, y = c(7500,7100), 
+           label = c('long noncoding RNAs','messenger RNAs'), col = c("#E40B49","#00bfff"), size = 6)
 
 
 #=====================================================================================
@@ -669,12 +669,12 @@ p <- ggplot(data = exprs_TPM, aes(x = exprs,fill = type)) +
   geom_density(aes(alpha = 0.8), show.legend = F) + theme_classic() + 
   scale_fill_manual(values=c("#999999", "#E69F00")) +
   geom_vline(xintercept=c(21,0.7),linetype="dashed") +
-  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16)) +
   labs(x = 'Total Expression (in log-transformed TPM)', y = 'Density') + 
   scale_x_log10(breaks = trans_breaks("log10", function(x) 10^x),
                 labels = trans_format("log10", math_format(10^.x)), 
                 limits = c(10^(-5),10^5)) +
-  annotate("text", x = 4.5*10^-4, y = c(0.7,0.65), label = c('long noncoding RNAs', 'messenger RNAs'), col = c("#999999", "#E69F00"), size = 5)
+  annotate("text", x = 0.3*10^4, y = c(0.7,0.663), label = c('long noncoding RNAs', 'messenger RNAs'), col = c("#999999", "#E69F00"), size = 6)
 
 p
 
@@ -723,8 +723,9 @@ pie <- read.table('/Users/mijiarui/R_bioinformatics_project/Master_thesis_projec
                   header = T, sep = '\t', quote = "", stringsAsFactors = F)
 class(pie)
 pie <- ggplot(pie, aes(x="", y=frequency, fill=type))+
-  geom_bar(width = 1, stat = "identity")
-pie <- pie + coord_polar("y", start = 0)
+  geom_bar(width = 1, stat = "identity", show.legend = F)
+pie <- pie + coord_polar("y", start = 0) +
+  labs(title = 'Transcripts locations in the genome', vjust = 0.5, hjust = 0.5)
 blank_theme <- theme_minimal()+
   theme(
     axis.title.x = element_blank(),
@@ -737,7 +738,7 @@ blank_theme <- theme_minimal()+
 library(scales)
 pie + scale_fill_brewer("blue") + blank_theme + theme(axis.text.x=element_blank())+
   geom_text(aes(y = frequency/3 + c(0, cumsum(frequency)[-length(frequency)]), 
-                label = percent(frequency/100)), size=4)
+                label = percent(frequency/100)), size=6, show.legend = F) 
 
 
 ############# STEP 1: Expression data and Phenotype data Preparation ##############
@@ -817,8 +818,8 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV), col = 'black')+ geom_poin
   geom_vline(xintercept = 1, col = 'darkgreen', lty = 2, lwd = 1) +
   theme_classic() +
   labs(x = 'Log2_mean', y = 'Log2_CV') + 
-  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12)) +
-  labs(x = 'Mean of Number of reads (log2-transformed)', y = 'Coefficient of variance (log2-transformed)') +
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16)) +
+  labs(x = 'Mean of expression (log2-transformed TPM)', y = 'Coefficient of variance (log2-transformed)') +
   geom_point(data = datExpr1[datExpr1$log2_CV > prediction$fit  & datExpr1$log2_mean > 1,1:22], 
              aes(x = log2_mean, y = log2_CV), col = 'red') +
   scale_x_continuous(breaks = seq(0,8,1));p
@@ -846,7 +847,7 @@ p <- ggplot(datExpr1, aes(x = log2_mean, y = log2_CV))+ geom_point() +
 
 
 #### Further filtering according to the predicted y value point prediction
-datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit  & datExpr1$log2_mean > 1,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
+datExpr0 <- datExpr1[datExpr1$log2_CV > prediction$fit + 2.57 * prediction$se.fit  & datExpr1$log2_mean > 1,1:20]; dim(datExpr0)  ## setting log2_mean > 2, I only get 109 condidate transcripts.
 head(datExpr0);dim(datExpr0)
 
 filtered_TPM_normalized_counts <- datExpr0
@@ -864,6 +865,28 @@ head(pearson_cor)
 hc <- hcluster(t(datExpr0), method="pearson")
 hmcol <- colorRampPalette(brewer.pal(9, "GnBu"))(100)
 heatmap.2(pearson_cor, Rowv = as.dendrogram(hc), trace = 'none',symm = T, col = hmcol, main = 'The pearson correlation of each')
+
+## Try to rotate the column text (for pheatmap), you have to change some parameters in "grid"
+library(grid)
+## Edit body of pheatmap:::draw_colnames, customizing it to your liking
+draw_colnames_45 <- function (coln, ...) {
+  m = length(coln)
+  x = (1:m)/m - 1/2/m
+  grid.text(coln, x = x, y = unit(0.96, "npc"), vjust = .5, 
+            hjust = 1, rot = 45, gp = gpar(...)) ## Was 'hjust=0' and 'rot=270'
+}
+## For pheatmap_1.0.8 and later:
+draw_colnames_45 <- function (coln, gaps, ...) {
+  coord = pheatmap:::find_coordinates(length(coln), gaps)
+  x = coord$coord - 0.5 * coord$size
+  res = textGrob(coln, x = x, y = unit(1, "npc") - unit(3,"bigpts"), vjust = 0.5, hjust = 1, rot = 45, gp = gpar(...))
+  return(res)}
+
+## 'Overwrite' default draw_colnames with your own version 
+assignInNamespace(x="draw_colnames", value="draw_colnames_45",
+                  ns=asNamespace("pheatmap"))
+
+colnames(sample) <- "cell type"
 pheatmap(pearson_cor, cutree_rows = 4, cutree_cols = 4, annotation_col = sample)
 
 #### Principal Component analysis (PCA) ######
@@ -871,10 +894,15 @@ pheatmap(pearson_cor, cutree_rows = 4, cutree_cols = 4, annotation_col = sample)
 library(ggbiplot)
 pca <- prcomp(t(datExpr0), scale. = T)   # remember to transpose the matrix
 plot(pca$x[,1],pca$x[,2])
+str(pca)
+par(mar = c(2,2,2,1))
 ggbiplot(pca ,choices = 1:2, obs.scale = T,labels = NULL, var.scale = T,groups = sample$celltype, ellipse = T, circle = T, var.axes = F, alpha = 0.5) + 
-  theme(legend.direction = 'horizontal', legend.position = 'top')+theme_classic() +
-  labs(x = "PC1 (42.2%)", y = "PC2 (13.8%)") +
-  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 12))
+  theme_classic() +
+  theme(legend.title=element_blank()) +
+  labs(x = "PC1 (32.6%)", y = "PC2 (16.0%)") +
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16)) +
+  geom_point(aes(colour=groups, shape = groups),size = 4) +
+  theme(legend.text = element_text(size = 18)) 
 
 
 
@@ -1944,6 +1972,8 @@ b_coordinate
 beta_coordinate <- b_coordinate
 
 library(biomaRt)
+library(clusterProfiler)
+readable = T
 mart <- useMart('ensembl')
 ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
 for (i in 1:nrow(b_coordinate)){
@@ -1955,7 +1985,7 @@ entrez <- as.vector(unlist(b_coordinate$flanking))
 GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.2,
                pAdjustMethod = 'BH',qvalueCutoff = 0.2,ont = 'BP', readable = readable)
 GO
-dotplot(GO)
+dotplot(GO) + scale_size(range = c(2,15))+ ggplot2::xlim(NA, 0.11)
 cnetplot(GO)
 
 ################## Pick up the promoter regions ###################
@@ -1963,17 +1993,10 @@ cnetplot(GO)
 ### the both ends. It is good to use 'dplyr' package here.
 library('dplyr')
 test_beta_coordinate <- beta_coordinate
-promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -500, End = start)[, c(1,5,6,4)]
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -100, End = start-90)[, c(1,5,6,4)]
 promoter_left_strand
-promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end, End = end + 500 )[,c(1,5,6,4)]
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end + 90, End = end + 100 )[,c(1,5,6,4)]
 promoter_right_strand
-
-######
-# +/-
-promoter_left_strand$strand <- rep('+', times = nrow(promoter_left_strand))
-promoter_right_strand$strand <- rep('-', times = nrow(promoter_right_strand))
-promoter <- rbind(promoter_left_strand, promoter_right_strand)
-######
 
 ######
 ####### ++/--
@@ -2002,7 +2025,7 @@ for (i in 1:nrow(promoter)){## here we found that the 'chr' does not have 'chr' 
 promoter <- data.frame(transcript_ID = promoter$transcript_ID, chr = promoter$Chr, promoter[,2:3], strand = promoter$strand) 
 head(promoter); dim(promoter)
 promoter; class(promoter)
-write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter_significant_beta_vs_alphaDelta_lincRNA.txt', 
+write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/new/promoter_significant_beta_vs_alphaDelta_lincRNA.txt', 
             sep = '\t', row.names = F, col.names = F, quote = F)
 
 
@@ -2108,8 +2131,8 @@ a_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcri
 alpha_coordinate <- a_coordinate
 
 
-mart <- useMart('ensembl')
-ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
+# mart <- useMart('ensembl')
+# ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
 for (i in 1:nrow(a_coordinate)){
   a_coordinate$flanking[i] <- getBM(attributes = 'entrezgene', filters = c('chromosome_name','start','end'),
                                     values= list(a_coordinate$chr[i],a_coordinate$start[i]-100000,a_coordinate$end[i]+100000), 
@@ -2126,9 +2149,9 @@ cnetplot(GO)
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
 test_beta_coordinate <- alpha_coordinate; dim(test_beta_coordinate)
-promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -500, End = start)[, c(1,5,6,4)]
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -100, End = start-90)[, c(1,5,6,4)]
 promoter_left_strand
-promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end , End = end + 500)[,c(1,5,6,4)]
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end + 90 , End = end + 100)[,c(1,5,6,4)]
 promoter_right_strand
 
 
@@ -2159,7 +2182,7 @@ for (i in 1:nrow(promoter)){## here we found that the 'chr' does not have 'chr' 
 promoter <- data.frame(transcript_ID = promoter$transcript_ID, chr = promoter$Chr, promoter[,2:3], strand = promoter$strand) 
 head(promoter); dim(promoter)
 promoter
-write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter_significant_alpha_vs_betaDelta_lincRNA.txt', 
+write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/new/promoter_significant_alpha_vs_betaDelta_lincRNA.txt', 
             sep = '\t', row.names = F, col.names = F, quote = F)
 
 
@@ -2270,27 +2293,29 @@ d_coordinate <- coordinate_total_transcript[coordinate_total_transcript$transcri
 d_coordinate; nrow(d_coordinate)
 delta_coordinate <- d_coordinate
 
-mart <- useMart('ensembl')
-ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
+# mart <- useMart('ensembl')
+# ensembl <- useDataset('drerio_gene_ensembl', mart) ## # select dataset "drerio_gene_ensembl"
 for (i in 1:nrow(d_coordinate)){
   d_coordinate$flanking[i] <- getBM(attributes = 'entrezgene', filters = c('chromosome_name','start','end'),
-                                    values= list(d_coordinate$chr[i],d_coordinate$start[i]-300000,d_coordinate$end[i]+300000), 
+                                    values= list(d_coordinate$chr[i],d_coordinate$start[i]-150000,d_coordinate$end[i]+150000), 
                                     mart=ensembl)
 }
 entrez <- unique(as.vector(unlist(d_coordinate$flanking)))
 GO <- enrichGO(entrez,'org.Dr.eg.db',pvalueCutoff = 0.2,
                pAdjustMethod = 'BH',qvalueCutoff = 0.2,ont = 'BP', readable = readable)
+
 GO
-dotplot(GO)
+library(stringr)
+dotplot(GO) + scale_y_discrete(labels = function(x)str_wrap(x, width = 40)) 
 cnetplot(GO)
 
 ################## Pick up the promoter regions ###################
 ### Normally we define the promoter regions as 500 bp upstream of TSS. Because this is unstranded library, we need to check
 ### the both ends. It is good to use 'dplyr' package here.
 test_beta_coordinate <- delta_coordinate
-promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -500, End = start )[, c(1,5,6,4)]
+promoter_left_strand <- mutate(.data = test_beta_coordinate, Start = start -100, End = start - 90 )[, c(1,5,6,4)]
 promoter_left_strand
-promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end , End = end + 500)[,c(1,5,6,4)]
+promoter_right_strand <- mutate(.data = test_beta_coordinate, Start = end + 90, End = end + 100)[,c(1,5,6,4)]
 promoter_right_strand
 
 
@@ -2321,7 +2346,7 @@ for (i in 1:nrow(promoter)){## here we found that the 'chr' does not have 'chr' 
 promoter <- data.frame(transcript_ID = promoter$transcript_ID, chr = promoter$Chr, promoter[,2:3], strand = promoter$strand) 
 head(promoter); dim(promoter)
 promoter
-write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/promoter_significant_delta_vs_alphaBeta_lincRNA.txt', 
+write.table(x = promoter, file = '/Users/mijiarui/biosoft/HOMER/results/new/promoter_significant_delta_vs_alphaBeta_lincRNA.txt', 
             sep = '\t', row.names = F, col.names = F, quote = F)
 
 
@@ -2345,7 +2370,8 @@ significant <- c(a,b,d)
 dge <- normalized_counts[rownames(normalized_counts) %in% significant, c(7:11,2:6,12:15)]
 pheatmap(dge, color = colorRampPalette(c('blue', 'white', 'firebrick3'))(50), 
          cluster_rows = T , scale = 'row', cluster_cols = F, annotation_col = sample, 
-         cutree_rows = 3)
+         cutree_rows = 3) 
+colnames(sample) <- "cell type"
 #### according to TPM
 #dge1 <- transcripts[rownames(transcripts) %in% e$transcript_ID, c(7:11,2:6,12:15)]
 #dge1 <- transcripts[rownames(transcripts) %in% significant, c(7:11,2:6,12:15)]
@@ -2383,8 +2409,14 @@ dim(yellow)
 ### for yellow module (beta cell, hub gene with differential expressed lincRNA candidates)
 yell <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_EDA/yell.txt',
                      header = T, sep = '\t', quote = "")
+yell1 <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_EDA/yell1.txt',
+                    header = T, sep = '\t', quote = "")
+blue <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_EDA/blue.txt',
+                   header = T, sep = '\t', quote = "")
+turquoise <- read.table(file = '/Users/mijiarui/R_bioinformatics_project/Master_thesis_project/lncRNA_EDA/turquoise.txt',
+                        header = T, sep = '\t', quote = "")
 dim(yell)
-a <- rbind(dge, yell)
+betacell <- rbind(dge, yell)
 pearson_cor <- as.matrix(cor(t(a), method = 'pearson'))
 library(pheatmap)
 pheatmap(pearson_cor)
@@ -2497,3 +2529,88 @@ for (i in b){
 }
 b <- c("ENSDARG00000020475","ENSDARG00000095223","ENSDARG00000063433")
 d <- c("TU41897","TU52979","TU58615","TU87440","TU31610")
+
+### Correlation between lncRNA and NKX3.2 in beta-cell
+b
+beta1 <- data.frame(TU33830 = rlogMat[row.names(rlogMat)=="TU33830",2:15], 
+                    NKX3.2 = as.vector(as.matrix(yell1[row.names(yell1) == "ENSDARG00000037639",])))
+ggplot(beta1, aes(NKX3.2, TU33830)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE) +
+  theme_minimal() + geom_smooth(method = lm, se = T) + 
+  labs(x = 'NKX3.2 (log-transformed normalized counts)', y = 'TU33830 (log-transformed TPM)')+
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16))
+
+
+beta1 <- data.frame(TU28171 = rlogMat[row.names(rlogMat)=="TU28171",2:15], 
+                    NKX3.2 = as.vector(as.matrix(yell1[row.names(yell1) == "ENSDARG00000037639",])))
+ggplot(beta1, aes(NKX3.2, TU28171)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE) +
+  theme_minimal() + geom_smooth(method = lm, se = T) + 
+  labs(x = 'NKX3.2 (log-transformed normalized counts)', y = 'TU28171 (log-transformed TPM)')+
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16))
+
+beta1 <- data.frame(TU12827 = rlogMat[row.names(rlogMat)=="TU12827",2:15], 
+                    NKX3.2 = as.vector(as.matrix(yell1[row.names(yell1) == "ENSDARG00000037639",])))
+ggplot(beta1, aes(NKX3.2, TU12827)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE) +
+  theme_minimal() + geom_smooth(method = lm, se = T) + 
+  labs(x = 'NKX3.2 (log-transformed normalized counts)', y = 'TU12827 (log-transformed TPM)')+
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16))
+
+
+### Correlation between lncRNA and arxa in alpha-cell
+a
+alpha1 <- data.frame(TU41656 = rlogMat[row.names(rlogMat)=="TU41656",2:15], 
+                     ARXA = as.vector(as.matrix(blue[row.names(blue) == "ENSDARG00000058011",])))
+ggplot(alpha1, aes(ARXA, TU41656)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE) +
+  theme_minimal() + geom_smooth(method = lm, se = T) + 
+  labs(x = 'ARXA (log-transformed normalized counts)', y = 'TU41656 (log-transformed TPM)')+
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16))
+
+
+alpha1 <- data.frame(TU96683 = rlogMat[row.names(rlogMat)=="TU96683",2:15], 
+                     ARXA = as.vector(as.matrix(blue[row.names(blue) == "ENSDARG00000058011",])))
+ggplot(alpha1, aes(ARXA, TU96683)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE) +
+  theme_minimal() + geom_smooth(method = lm, se = T) + 
+  labs(x = 'ARXA (log-transformed normalized counts)', y = 'TU96683 (log-transformed TPM)')+
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16))
+
+
+alpha1 <- data.frame(TU87639 = rlogMat[row.names(rlogMat)=="TU87639",2:15], 
+                     ARXA = as.vector(as.matrix(blue[row.names(blue) == "ENSDARG00000058011",])))
+ggplot(alpha1, aes(ARXA, TU87639)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE) +
+  theme_minimal() + geom_smooth(method = lm, se = T) + 
+  labs(x = 'ARXA (log-transformed normalized counts)', y = 'TU87639 (log-transformed TPM)')+
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16))
+
+### Correlation between lncRNA and arxa in delta-cell
+d
+delta1 <- data.frame(TU97469 = rlogMat[row.names(rlogMat)=="TU97469",2:15], 
+                     CDX4 = as.vector(as.matrix(turquoise[row.names(turquoise) == "ENSDARG00000036292",])))
+ggplot(delta1, aes(CDX4, TU97469)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE) +
+  theme_minimal() + geom_smooth(method = lm, se = T) + 
+  labs(x = 'CDX4 (log-transformed normalized counts)', y = 'TU97469 (log-transformed TPM)')+
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16))
+
+
+delta1 <- data.frame(TU3164 = rlogMat[row.names(rlogMat)=="TU3164",2:15], 
+                     CDX4 = as.vector(as.matrix(turquoise[row.names(turquoise) == "ENSDARG00000036292",])))
+ggplot(delta1, aes(CDX4, TU3164)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE) +
+  theme_minimal() + geom_smooth(method = lm, se = T) + 
+  labs(x = 'CDX4 (log-transformed normalized counts)', y = 'TU3164 (log-transformed TPM)')+
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16))
+
+delta1 <- data.frame(TU71420 = rlogMat[row.names(rlogMat)=="TU71420",2:15], 
+                     CDX4 = as.vector(as.matrix(turquoise[row.names(turquoise) == "ENSDARG00000036292",])))
+ggplot(delta1, aes(CDX4, TU71420)) +
+  geom_point(shape = 16, size = 5, show.legend = FALSE) +
+  theme_minimal() + geom_smooth(method = lm, se = T) + 
+  labs(x = 'CDX4 (log-transformed normalized counts)', y = 'TU71420 (log-transformed TPM)')+
+  theme(axis.title = element_text(size = 18), axis.text = element_text(size = 16))
+
+
